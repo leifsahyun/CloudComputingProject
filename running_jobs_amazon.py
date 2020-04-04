@@ -9,11 +9,13 @@ from libcloud.compute.providers import get_driver
 import traceback
 import json
 import subprocess
+import time
 
 providerKeys = None
 sshKeys = {
 "static_pair": "static_pair.pem"
 }
+sshUsername = "ubuntu"
 
 try:
 	keyFile = open("keys.json")
@@ -45,44 +47,53 @@ selectedImage = [i for i in images if i.id == IMAGE_ID][0]
 
 print("loading key pair for ssh")
 keypairs = driver.list_key_pairs()
-pair = None
+pairName = None
 pemFile = None
 for k in keypairs:
 	if k.name in sshKeys:
-		pair = k
+		pairName = k.name
 		pemFile = sshKeys[k.name]
-if pair is not None:
-	print(pair)
+		break
+if pairName is not None:
+	print(pairName)
 	print(pemFile)
 else:
 	print("ERROR: Could not find ssh key")
 	exit()
 
 print("preparing to acquire instance")
-node = driver.create_node(name='test-node', image=selectedImage, size=selectedSize, ex_keyname=pair.name, ex_security_groups=["launch-wizard-1"])
+node = driver.create_node(name='test-node', image=selectedImage, size=selectedSize, ex_keyname=pairName, ex_security_groups=["launch-wizard-1"])
 
 try:
 	print(node)
 	print("waiting for node to be ready")
 	node_with_ip = driver.wait_until_running([node])
 	node = node_with_ip[0][0]
-	node_ip = node_with_ip[0][1][0]
+	node_ip = node.public_ips[0]
 	print(node)
 	print(node_ip)
-	print("Making call to cloud server to retrieve date")
 	
-	#from https://gist.github.com/bortzmeyer/1284249
-	#the only simple way to do ssh in Python
-	ssh = subprocess.Popen(["ssh", "-i", pemFile, "-o", "StrictHostKeyChecking=no", "ubuntu@%s" % node_ip, JOB],
-                       shell=False,
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-	#There is a known issue with using Popen.wait when stdout is specified in the
-	#Popen constructor, see https://docs.python.org/2/library/subprocess.html
-	#however, without this call, stdout.readlines() blocks because the pipe
-	#remains open. At some point in the future, we will want to find a different
-	#way to do this.
-	ssh.wait()
+	### From this point on, code is identical to running_jobs_google.py
+	print("Making call to cloud server to retrieve date")
+	ssh = subprocess.Popen(["ssh", "-i", pemFile, "-o", "StrictHostKeyChecking=no", "%s@%s" % (sshUsername, node_ip), JOB],
+					shell=False,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE)
+	# Run the job until it completes or a 100 second timeout
+	start = time.time()
+	now = start
+	last = now
+	while ssh.poll() is None and now-start<100:
+		now = time.time()
+		#periodic printing to show the script is alive
+		if now-last > 5:
+			print("waiting for job to complete")
+			last = now
+	if ssh.poll() is None:
+		print("job timed out")
+		ssh.kill()
+	else:
+		print("job finished")
 	result = ssh.stdout.readlines()
 	if result == []:
 		error = ssh.stderr.readlines()
