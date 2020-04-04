@@ -13,16 +13,16 @@ import time
 
 providerKeys = None
 sshKeys = {
-"static_pair": "static_pair.pem"
+"static_pair": "keys/static_pair.pem"
 }
 sshUsername = "ubuntu"
 
 try:
-	keyFile = open("keys.json")
+	keyFile = open("keys/keys.json")
 	stringRep = keyFile.read()
 	providerKeys = json.loads(stringRep)
 except:
-	print("failed to read key file")
+	print("could not find or could not read keys/keys.json")
 	exit()
 
 IMAGE_ID = 'ami-0fc20dd1da406780b'

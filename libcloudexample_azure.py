@@ -7,7 +7,7 @@ import json
 keys = None
 
 try:
-	keyFile = open("keys.json")
+	keyFile = open("keys/keys.json")
 	stringRep = keyFile.read()
 	keys = json.loads(stringRep)
 except:

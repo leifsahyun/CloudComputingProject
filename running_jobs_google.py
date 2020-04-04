@@ -7,12 +7,12 @@ import time
 
 providerKeys = None
 sshKeys = {
-"static_pair": "static_pair.pem"
+"static_pair": "keys/static_pair.pem"
 }
 sshUsername = None
 
 try:
-	keyFile = open("keys.json")
+	keyFile = open("keys/keys.json")
 	stringRep = keyFile.read()
 	providerKeys = json.loads(stringRep)
 except:

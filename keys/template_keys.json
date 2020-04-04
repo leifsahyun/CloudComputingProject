@@ -1,0 +1,20 @@
+{
+	"__comment": "Copy this file, rename it to keys.json and change each of the values to the appropriate strings"
+	"GCE": {
+		"id": "The email address of the project service account set up with Google Cloud Platform web interface",
+		"key": "The path of the json keyfile downloaded from Google Cloud Platform web interface when above service account was created; for relative paths, this should be relative to the directory where the code is running"
+	},
+	"EC2": {
+		"id": "ID of an access key created with Amazon Web Services web interface",
+		"key": "The access key"
+	},
+	"AZURE_ARM": {
+		"tenant_id": "Your tenant id, retrieved from Azure Active Directory in the Azure web interface",
+		"subscription_id": "The id of your Azure subscription",
+		"key": "The application id of an application service principal created through the Azure web interface",
+		"secret": "The generated password for the service principal above",
+		"resource_group": "The name of a resource group created through the Azure web interface and associated with the storage account and virtual network below",
+		"storage_account": "The name of a storage account created through the Azure web interface",
+		"virtual_network": "The name of a virtual network created through the Azure web interface"
+	}
+}
