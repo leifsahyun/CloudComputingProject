@@ -9,7 +9,7 @@ import traceback
 import json
 import time
 
-# This class should allow the user to acquire and use instances from
+# This class allows the user to acquire and use instances from
 # arbitrary providers without worrying about the provider-specific
 # functions and data
 class ArbitraryDriver(NodeDriver):
@@ -130,7 +130,7 @@ class ArbitraryDriver(NodeDriver):
 				if ex_keyname is None:
 					raise RuntimeError("Could not find a ssh keypair that is both loaded in this driver and registered with Amazon")
 			if ex_security_groups is None:
-				ex_security_groups=["launch-wizard-1"]
+				ex_security_groups=["default"]
 			return self.providerDrivers[provider].create_node(name=name, image=image, size=size, ex_keyname=ex_keyname, ex_security_groups=ex_security_groups)
 		elif provider==Provider.GCE:
 			if location is None:

@@ -62,7 +62,7 @@ else:
 	exit()
 
 print("preparing to acquire instance")
-node = driver.create_node(name='test-node', image=selectedImage, size=selectedSize, ex_keyname=pairName, ex_security_groups=["launch-wizard-1"])
+node = driver.create_node(name='test-node', image=selectedImage, size=selectedSize, ex_keyname=pairName, ex_security_groups=["default"])
 
 try:
 	print(node)

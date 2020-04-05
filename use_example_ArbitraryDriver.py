@@ -3,7 +3,7 @@ from libcloud.compute.types import Provider
 import traceback
 # An example of how to use the ArbitraryDriver class
 # The provider_to_use variable tells the program which provider to use
-provider_to_use = Provider.GCE
+provider_to_use = Provider.EC2
 print("creating driver")
 driver = ArbitraryDriver("keys/keys.json")
 driver.load_pem_ssh_key("keys/static_pair.pem")
