@@ -22,23 +22,34 @@ class ArbitraryDriver(NodeDriver):
 	providerKeys = {}
 	sshKey = {}
 	
+	# The constructor accepts a keyfile path or a python dictionary of provider keys
+	# See the keys/template_keys.json file for the format
+	# After construction, the driver will be able to interface with any
+	# provider listed in self.providers that it was given keys for
 	def __init__(self, keys, provider=None):
 		if provider is not None:
 			print("Warning: setting up an ArbitraryDriver for a specific provider will make it unable to use other providers")
-		# Open the keyfile and retrieve provider keys
-		try:
-			keyFile = open(keys)
-			stringRep = keyFile.read()
-			self.providerKeys = json.loads(stringRep)
-			keyFile.close()
-		except Exception as e:
-			raise type(e)("Failed to load json keyfile %s: %s" % (keys, str(e))) from e
+		if type(keys) is str:
+			# Open the keyfile and retrieve provider keys
+			try:
+				keyFile = open(keys)
+				stringRep = keyFile.read()
+				self.providerKeys = json.loads(stringRep)
+				keyFile.close()
+			except Exception as e:
+				raise type(e)("Failed to load json keyfile %s: %s" % (keys, str(e))) from e
+		elif type(keys) is dict:
+			# Load the dict of provider keys
+			self.providerKeys = keys
+		else:
+			raise TypeError("keys parameter in ArbitraryDriver constructor must be a string file path or a dict")		
 		# Setup the individual provider drivers
 		if provider is not None:
 			self.providerDrivers[provider] = self.setup_driver(provider)
 		else:
 			for p in self.providers:
-				self.providerDrivers[p] = self.setup_driver(p)
+				if p.name in self.providerKeys:
+					self.providerDrivers[p] = self.setup_driver(p)
 	
 	def setup_driver(self, provider):
 		cls = get_driver(provider)
