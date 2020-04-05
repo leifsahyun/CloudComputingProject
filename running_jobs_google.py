@@ -19,6 +19,16 @@ except:
 	print("failed to read key file")
 	exit()
 
+#open the google keyfile to get the project id, used later
+try:
+	keyFile = open(providerKeys["GCE"]["key"])
+	stringRep = keyFile.read()
+	tempLoaded = json.loads(stringRep)
+	providerKeys["GCE"]["project_id"] = tempLoaded["project_id"]
+except:
+	print("failed to read google key file")
+	exit()
+
 IMAGE_NAME = 'debian-9-stretch-v20200309'
 SIZE_NAME = 'n1-standard-1'
 #this is the job to run on the remote server as a shell command
@@ -29,7 +39,7 @@ print("started script")
 cls = get_driver(Provider.GCE)
 #the key and id in the keyfile are for a service account that must be created through the GCE website
 #the id is the service account email address, the key is the path to the json keyfile provided by GCE
-driver = cls(providerKeys["GCE"]["id"], providerKeys["GCE"]["key"], project='airy-strength-272318')
+driver = cls(providerKeys["GCE"]["id"], providerKeys["GCE"]["key"], project=providerKeys["GCE"]["project_id"])
 
 print("got driver")
 
