@@ -6,11 +6,11 @@ import json
 keys = None
 
 try:
-	keyFile = open("keys.json")
+	keyFile = open("keys/keys.json")
 	stringRep = keyFile.read()
 	keys = json.loads(stringRep)
 except:
-	print("failed to read key file")
+	print("could not find or could not read keys/keys.json")
 	exit()
 
 IMAGE_ID = 'ami-0fc20dd1da406780b'
