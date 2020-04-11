@@ -1,3 +1,4 @@
+
 #gets all instance types from a driver passed to the function and saves them to files
 #sizes contains instance types and sizes
 #images contains available operating system images
@@ -14,3 +15,9 @@ def getDriverInstanceLists(cloudDriver):
 		for image in images:
 			imageFile.write(str(image)+"\n")
 	print("images written to file")
+
+
+# TODO: test case here. (probaly won't need)
+# if __name__ == "__main__":
+#     # execute only if run as a script
+#     main(args)

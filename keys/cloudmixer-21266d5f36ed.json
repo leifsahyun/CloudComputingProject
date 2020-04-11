@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "cloudmixer",
+  "private_key_id": "21266d5f36eda9582661536471805f0949aaa58f",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCdqwNM3ohKPHbh\nbmtrvjpMbrpsChPjjY34FMlGdkmeKXkz7IAnBGLLo/euW9R+pFEfA/GU3b2lI2Hm\nYpwhGsLotny/lWYKcd5c96kXVgWUqFDYzijawDZPCTZzg3teo7MoessVi3jUw4n6\nU5WFgFmP7x45hRk1E+dn4GtYHH2iygfTH8TRbr5DCZ7rR8QlLRcnwLe2nFTCPGEz\nSYwftH+G20AkQG8O5vN48kWziuWknQtMM54w4WSSuLbIoNFUeoqmn5xr+MCDAoEz\n+wFvv9TBkMrxx0FkEBaoJf27ATYtG0bDCr1g4J5Xf5aQeJjxyZ7ZKY3SN5NzOHsA\n653Pch9nAgMBAAECggEAC80aY3ffPk868VymcFtorwKKtD4nhvINckgmrejPUdCg\n4HYPPDG5LgIz2Q/JM+wbS6BWm2Hi0/11/RyHEHiZpiQilORweCUAaSJQZw1qlYST\nqJFQatnVjCI7D80DlZiDIcCEet8ESEiVMfDCUZ/DFGGSzZNcyPrtvc9aZC9IaBVr\nsU/M/ZFNP3nhGOey3xDCk/7jKDheVbyX4P5aRuWzaPMCGZa5POeTA3T3ipMv7/4g\npYqPXDMUl9Pa9VSmbaTSAAwsTH91hYTWEFMgBgXVbQ7ba8he4KayV2GO2GdrXMun\n2ukNxJBg+BsZ9frMxW/YVE9xguOd+3QJTAJ3kwudQQKBgQDPapqiwPgk6PAJW1NY\nLXOCVvczBizyfmwNzd6tZCxBZTpnNmYv3Ct+XFICSj5h6kfneJ1LJk+u0HrlHYc4\nWgNZjbnhdy+4vpTyBB7C4jceKNsi21mcigleQpI3GVlXVdYM5FmwMxiPFRnOzA5F\nGZ6x4z+75KASJlLA99efpNlUeQKBgQDCmVMw0Hcl3w0ZR2gVDVCzq+aUQMb+/2Yg\nK0SROF4GHfQMzsZoM99vze1qMY8Lh397uoI8sy7twun2w68B3HHIZb53foFA2EaL\nXmtuKHh1l9wckqWXBUuFoZBjpmiPpJhGihl2PGvZp3/n29NTWE8518uYVHKmTE4Q\nUT/IcCda3wKBgQC2l1UL465O59Svl/rVzCU8X4x8GXql+o7q1AmsQFwJMbDpPWVV\nyo9rTKBRLcSe89xas75ccpyA+zzEx2rLO8ppIq+5APA8xWFfcCsYSoZVAYhvtgO8\nH3RBy37mDGWu0Xx+muMtjr2W7+9pMg952yTt2my33nrfn2cIQuZJvpgnmQKBgQC/\n2vSG6vCdWOSMKLd4EfGfwnoJbjgDTf/89UubtSwV8dAcFHzOXV4L18YbbZLvNf69\nGKuwdqRs6z9J97GCLznK7myzWPjL2q7qVwOpzqK8pSTw0rAJTcIglKJLbNQn0ooC\n+cKSrI1UQGy9RiB6SlWJ3LSwkYmbZR2Nvt0Ym2JhlwKBgQDOMxiXtsGed3iwOn1X\nPr0U4hKbR7MMwTpVu2ZEUvovwlLNDrkZ+j1H/9xIlJap22dMUQR1HdUh8cVMKPN3\njGo/Zwu5eYvur94HLx0PR4Teq3gK7hTe4T3J9wLoZUrPDfWlTVwWDpFcF58tVukt\nHgobRNj39FxIYQw7pjaYijBuxQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "libcloud@cloudmixer.iam.gserviceaccount.com",
+  "client_id": "116172044820570524210",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/libcloud%40cloudmixer.iam.gserviceaccount.com"
+}

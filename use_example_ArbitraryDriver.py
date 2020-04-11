@@ -3,10 +3,11 @@ from libcloud.compute.types import Provider
 import traceback
 # An example of how to use the ArbitraryDriver class
 # The provider_to_use variable tells the program which provider to use
-provider_to_use = Provider.EC2
+provider_to_use = Provider.GCE
 print("creating driver")
 driver = ArbitraryDriver("keys/keys.json")
-driver.load_pem_ssh_key("keys/static_pair.pem")
+driver.load_pem_ssh_key("keys/EC2_cs520_useast1.pem")
+#to_do, append .pem fikle location to the keys.json
 print("creating node")
 # When using the ArbitraryDriver, the create_node function is the only
 # function called differently between providers
@@ -26,5 +27,5 @@ except Exception as e:
 	print(traceback.format_exc())
 finally:
 	print("destroying node")
-	driver.destroy_node(node)
+	node.destroy()
 	print("node destroyed")
