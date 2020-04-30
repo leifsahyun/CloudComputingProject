@@ -5,19 +5,29 @@ import time, threading
 import requests, json
 
 
+API_Key = "c3d4e51234sa5"
 
+DEF_HOST_NAME = "localhost"
+DEF_PORT_NUMBER = 8080
 
 units={}
 #decorator for thimer threads
-def threaded(fn, interval, unit='sec'):
+def threaded(fn, interval, unit="sec"):
     def wrapper(*args, **kwargs):
         thread = threading.Thread(target=fn, args=args, kwargs=kwargs)
         thread.start()
         return thread
     return wrapper
 
-class Recommender(object):
+# class MetricsClient(object):
+#     def __init__(self):
+#     r = requests.post(url = API_ENDPOINT, data = data) 
+     
 
+ 
+
+#class Recommender(MetricsClient):
+class Recommender(objects):
 
     # the reccommender has 2 timers one for the regular metrics data update
     # the second, optional one is to check if the current instance is able to satisfy requirements 
@@ -27,6 +37,7 @@ class Recommender(object):
         self._self_t=None
         self.metrics = {}
         self.parms = {}
+        self.candidates=[]
 
         if True:  #check if paramters are utd
             self._update_t.start()
@@ -41,9 +52,34 @@ class Recommender(object):
 
     # POST Request that contains the list of wanted instance types.
     # returns a list of dictionaries in the same order with {} for N/A ones.
-    def request_metrics(self):
-        pass
 
+    
+    def request_metrics(self):
+        
+        
+        url=DEF_HOST_NAME + ":" + DEF_PORT_NUMBER
+        headers={"Accept": "application/json",
+                "Content-Type": "application/json"}
+        
+        #TODO: filter already-up-to-date instances
+        predata={"intances":self. candidates}
+
+        r = requests.post(url = API_ENDPOINT,headers=headers, data = json.dumps(predata)) 
+        #TODO: match reveiced instances wit requested?
+
+        resp_hdr=r.headers
+        resp_data=json.loads(r.content)
+
+        # case insensitivity for header keys is needed
+        if resp_hdr["Content-Type"] == "application/json":
+            if self.candidates == resp_data.keys() :
+
+                self.metrics.update(json.loads(r.content))
+
+        # check content type. etc.
+        #small TODO: purge non-canditadates
+
+        # process request
 
     #consider making this a staticmethod
     def get_candidates():    

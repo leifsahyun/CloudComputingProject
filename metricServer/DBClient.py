@@ -71,12 +71,7 @@ class DBClient(object):
     def add_entry(self, entry):
         
         #CONSIDER: having tables for each instance type
-        entry_data = {
-        'emp_no': emp_no,
-        'salary': 50000,
-        'from_date': tomorrow,
-        'to_date': date(9999, 1, 1),
-        }
+        entry_data = {}
         
         add_employee = ("INSERT INTO benchmark "
                "(first_name, last_name, cpu, gender, birth_date) "
