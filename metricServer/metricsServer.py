@@ -3,27 +3,35 @@
 #is moving sys under __main__ a common practice?
 import sys
 import time
-import BaseHTTPServer
+import BaseHTTPServer, cgi
+import json
 #import DBclient
 
+API_Key = 'c3d4e51234sa5'
 
 DEF_HOST_NAME = 'localhost' # !!!REMEMBER TO CHANGE THIS!!!
 DEF_PORT_NUMBER = 8080 # Maybe set this to 9000.
 
+dummy_metrics={'provider':'AWS',
+            'type':'m1',
+            'tier':'micro',
+            'cpu':16,
+            'RAM':32,
+            'something': 75}
 
 class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
 
-    def do_HEAD(s):
-        s.send_response(200)
-        s.send_header("Content-type", "text/html")
-        s.end_headers()
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
     
     
-    def do_GET(s):
+    def do_GET(self):
         """Respond to a GET request."""
-        s.send_response(200)
-        s.send_header("Content-type", "text/html")
-        s.end_headers()
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
 
     def do_POST(self):
    # Parse the form data posted
@@ -36,8 +44,18 @@ class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
 
         # Begin the response
         self.send_response(200)
+        self.send_header("Content-type", "application/json")
         self.end_headers()
         #### Body here
+
+
+        #if ctype != 'application/json':
+        message={}
+        message['received'] = 'ok'
+        self.wfile.write(json.dumps(dummy_metrics))
+
+
+      
 
         return
 
@@ -47,7 +65,7 @@ def main():
     PORT_NUMBER = DEF_PORT_NUMBER
     server_class = BaseHTTPServer.HTTPServer #nice touch they did in the examples
 
-    httpd = server_class((HOST_NAME, PORT_NUMBER), MyHandler)
+    httpd = server_class((HOST_NAME, PORT_NUMBER), MetricsServer)
     print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)
 
     try:
