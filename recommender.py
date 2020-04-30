@@ -2,6 +2,7 @@
 
 from enum import Enum
 import time, threading
+import requests, json
 
 
 
@@ -38,17 +39,24 @@ class Recommender(object):
     # def start(self):
         # self._update_t(start)
 
-    #def
+    # POST Request that contains the list of wanted instance types.
+    # returns a list of dictionaries in the same order with {} for N/A ones.
+    def request_metrics(self):
+        pass
 
-    #consider making this a startic_method
+
+    #consider making this a staticmethod
     def get_candidates():    
     # look up 
         raise NotImplementedError
 
-    def eval_score(self):
-        pass
-
-
+  
+    def eval(self,instance):
+        #TODO make this a list comparison
+        sum=0
+        for key, param in self.metrics:
+           sum+=instance[key].eval(stats)
+        return sum
 
 
     # Evaluate if given
@@ -74,12 +82,6 @@ class Recommender(object):
         #make this more analytic, with non-certain scores and close alternatives
 
 
-    def eval(self,instance):
-        #TODO make this a list comparison
-        sum=0
-        for key, param in self.metrics:
-           sum+=instance[key].eval(stats)
-        return sum
 
     def __del__(self): 
         print("Terminating Recommender...")

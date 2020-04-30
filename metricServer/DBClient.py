@@ -66,6 +66,8 @@ class DBClient(object):
 
     # receive an entry, validate and insert
     # entry should have 
+
+    # example: aDBCleint.add_entry(Perfkit.do_bench_stuff())
     def add_entry(self, entry):
         
         #CONSIDER: having tables for each instance type
