@@ -53,7 +53,7 @@ class Recommender(objects):
     # POST Request that contains the list of wanted instance types.
     # returns a list of dictionaries in the same order with {} for N/A ones.
 
-    
+    # check stale  before recommend and call this fcn?
     def request_metrics(self):
         
         
@@ -76,8 +76,9 @@ class Recommender(objects):
 
                 self.metrics.update(json.loads(r.content))
 
+                
         # check content type. etc.
-        #small TODO: purge non-canditadates
+        # small TODO: purge non-canditadates
 
         # process request
 

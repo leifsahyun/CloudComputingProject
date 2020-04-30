@@ -74,7 +74,7 @@ class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
                 
                 self.wfile.write(json.dumps(metricdata)) 
 
-            #TODO: request might be for updating the instance lsit database
+            #TODO: request might be for updating the instance list database
             #elif has_key(something else) 
 
             # couldn't find the key we are looking for
