@@ -88,11 +88,13 @@ class Recommender(objects):
         raise NotImplementedError
 
   
+    # need to reformat this: DONE, test
+    #  instance[param] is an int/float, and self.metric is a dict of metrics
     def eval(self,instance):
         #TODO make this a list comparison
         sum=0
-        for key, param in self.metrics:
-           sum+=instance[key].eval(stats)
+        for name, metric in self.metrics:
+           sum+=metric.eval(instance[name])
         return sum
 
 
@@ -109,7 +111,7 @@ class Recommender(objects):
 
     def recommend(self,instances):
           
-        scores = [key:self.eval(instance) for key, instance param in instances]
+        scores = {key:self.eval(instance) for key, instance  in instances}
 
         best=min(dic, key=dic.get)
         print(" The instance " + instances[best]+" was evaluated as the best candidate")
