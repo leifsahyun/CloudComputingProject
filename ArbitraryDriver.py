@@ -4,10 +4,12 @@ from libcloud.compute.base import NodeDriver
 from libcloud.compute.base import Node
 from libcloud.compute.base import KeyPair
 from libcloud.compute.base import NodeAuthPassword
+from recommender import Recommender
 import subprocess
 import traceback
 import json
 import time
+import paramiko
 
 # This class allows the user to acquire and use instances from
 # arbitrary providers without worrying about the provider-specific
@@ -21,12 +23,14 @@ class ArbitraryDriver(NodeDriver):
 	providerDrivers = {}
 	providerKeys = {}
 	sshKey = {}
+	jobs = {} #this dict will contain job pids for each node name
 	
 	# The constructor accepts a keyfile path or a python dictionary of provider keys
 	# See the keys/template_keys.json file for the format
 	# After construction, the driver will be able to interface with any
 	# provider listed in self.providers that it was given keys for
 	def __init__(self, keys, provider=None):
+		self.recommender = Recommender(10)
 		if provider is not None:
 			print("Warning: setting up an ArbitraryDriver for a specific provider will make it unable to use other providers")
 		if type(keys) is str:
@@ -123,6 +127,15 @@ class ArbitraryDriver(NodeDriver):
 		if name is None:
 			name = filePath[filePath.rfind("/")+1:-4]
 		self.sshKey[name] = filePath
+		
+	def create_managed_node(self, name, provider=None):
+                if provider is None:
+                        size = self.recommender.recommend(self.list_sizes())
+                        sizeDriver = size.driver
+                        for p in self.providerDrivers.keys():
+                                if self.providerDrivers[p] == sizeDriver:
+                                        provider = p
+		return self.create_node(name, cloudMixerImage, size, provider=provider)
 		
 	
 	def create_node(self, name, image, size, provider=None, location=None, ex_keyname=None, ex_security_groups=None):
@@ -236,3 +249,20 @@ class ArbitraryDriver(NodeDriver):
 			
 	def destroy_node(self, node):
 		return node.driver.destroy_node(node)
+
+	def migrate_node(self, node, dest_provider, dest_size):
+                client = paramiko.client.SSHClient()
+                client.load_system_host_keys()
+                client.connect(node.public_ips[0], username='ubuntu', key_filename=list(self.sshKey.values())[0])
+                for job in jobs[node.name]:
+                        cmdin, cmdout, cmderr = client.exec_command('sudo criu dump --tree '+job+' -D /home/ubuntu/criu-chamber')
+                newNode = self.create_node(name=node.name+'-copy', image='cloud-mixer-image-v2', size=dest_size, provider=dest_provider)
+                cmdin, cmdout, cmderr = client.exec_command('rsync -a -e "ssh -i .ssh/static_pair.pem" --super /home/ubuntu ubuntu@'+newNode.public_ips[0]+':/home')
+                client.close()
+                self.destroy_node(node)
+                clientB = paramiko.client.SSHClient()
+                clientB.load_system_host_keys()
+                clientB.connect(newNode.public_ips[0], username='ubuntu', key_filename=list(self.sshKey.values())[0])
+                clientB.exec_command('sudo criu restore -d -D /home/ubuntu/criu-chamber')
+                return newNode
+
