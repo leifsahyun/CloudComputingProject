@@ -4,11 +4,12 @@ from libcloud.compute.base import NodeDriver
 from libcloud.compute.base import Node
 from libcloud.compute.base import KeyPair
 from libcloud.compute.base import NodeAuthPassword
-from recommender import Recommender
+#from recommender import Recommender
 import subprocess
 import traceback
 import json
 import time
+import threading
 import paramiko
 
 # This class allows the user to acquire and use instances from
@@ -30,7 +31,7 @@ class ArbitraryDriver(NodeDriver):
 	# After construction, the driver will be able to interface with any
 	# provider listed in self.providers that it was given keys for
 	def __init__(self, keys, provider=None):
-		self.recommender = Recommender(10)
+		#self.recommender = Recommender(10)
 		if provider is not None:
 			print("Warning: setting up an ArbitraryDriver for a specific provider will make it unable to use other providers")
 		if type(keys) is str:
@@ -128,19 +129,35 @@ class ArbitraryDriver(NodeDriver):
 			name = filePath[filePath.rfind("/")+1:-4]
 		self.sshKey[name] = filePath
 		
-	def create_managed_node(self, name, provider=None):
-                if provider is None:
-                        size = self.recommender.recommend(self.list_sizes())
-                        sizeDriver = size.driver
-                        for p in self.providerDrivers.keys():
-                                if self.providerDrivers[p] == sizeDriver:
-                                        provider = p
-		return self.create_node(name, cloudMixerImage, size, provider=provider)
+	def create_managed_node(self, name, provider=None, slos={}):
+		if provider is None:
+			size = None
+			#size = self.recommender.recommend(self.list_sizes())
+			sizeDriver = size.driver
+			for p in self.providerDrivers.keys():
+				if self.providerDrivers[p] == sizeDriver:
+					provider = p
+		node = self.create_node(name, cloudMixerImage, size, provider=provider)
+		periodic = threading.Timer(60, self.check_and_migrate, kwargs={node: node, slos: slos})
+		return node
+
+	def check_and_migrate(self, node, slos):
+		#if self.recommender.eval(node) > slos['reward']:
+		provider = None
+		size = None
+		#size = self.recommender.recommend(self.list_sizes())
+		sizeDriver = size.driver
+		for p in self.providerDrivers.keys():
+			if self.providerDrivers[p] == sizeDriver:
+				provider = p
+		return self.migrate_node(node, provider, size)
+		#else:
+			#return node
 		
 	
 	def create_node(self, name, image, size, provider=None, location=None, ex_keyname=None, ex_security_groups=None):
 		if provider is None:
-			raise RuntimeError("Node must be created with a specified provider; functionality for selecting a provider based on SLO has not yet been implemented")
+			raise RuntimeError("Node must be created with a specified provider using this function; use create_managed_node to create a node using SLOs")
 			return None
 		if not provider in self.providerDrivers.keys():
 			raise RuntimeError("No defined implementation for the provider specified")
@@ -212,10 +229,11 @@ class ArbitraryDriver(NodeDriver):
 	def run_job(self, node, job, timeout=None, silent=False, user=None):
 		if not silent:
 			print("Running job '%s'" % job)
-		if type(node.driver) == get_driver(Provider.GCE):
-			user = list(self.sshKey.keys())[0]
-		elif type(node.driver) == get_driver(Provider.EC2):
-			user = "ubuntu"
+		if user is None:
+			if type(node.driver) == get_driver(Provider.GCE):
+				user = list(self.sshKey.keys())[0]
+			elif type(node.driver) == get_driver(Provider.EC2):
+				user = "ubuntu"
 		if user is None:
 			raise RuntimeError("Must define user parameter if not not running on a GCE or EC2 node")
 		ssh = subprocess.Popen(["ssh", "-i", list(self.sshKey.values())[0], "-o", "StrictHostKeyChecking=no", "%s@%s" % (user, node.public_ips[0]), job],
@@ -250,19 +268,32 @@ class ArbitraryDriver(NodeDriver):
 	def destroy_node(self, node):
 		return node.driver.destroy_node(node)
 
-	def migrate_node(self, node, dest_provider, dest_size):
-                client = paramiko.client.SSHClient()
-                client.load_system_host_keys()
-                client.connect(node.public_ips[0], username='ubuntu', key_filename=list(self.sshKey.values())[0])
-                for job in jobs[node.name]:
-                        cmdin, cmdout, cmderr = client.exec_command('sudo criu dump --tree '+job+' -D /home/ubuntu/criu-chamber')
-                newNode = self.create_node(name=node.name+'-copy', image='cloud-mixer-image-v2', size=dest_size, provider=dest_provider)
-                cmdin, cmdout, cmderr = client.exec_command('rsync -a -e "ssh -i .ssh/static_pair.pem" --super /home/ubuntu ubuntu@'+newNode.public_ips[0]+':/home')
-                client.close()
-                self.destroy_node(node)
-                clientB = paramiko.client.SSHClient()
-                clientB.load_system_host_keys()
-                clientB.connect(newNode.public_ips[0], username='ubuntu', key_filename=list(self.sshKey.values())[0])
-                clientB.exec_command('sudo criu restore -d -D /home/ubuntu/criu-chamber')
-                return newNode
+	def migrate_node(self, node, dest_provider, dest_size, name=None):
+		if name is None:
+			name = node.name+'-copy'
+		client = paramiko.client.SSHClient()
+		client.load_system_host_keys()
+		client.connect(node.public_ips[0], username='ubuntu', key_filename=list(self.sshKey.values())[0])
+		if node.name in self.jobs:
+			for job in self.jobs[node.name]:
+				cmdin, cmdout, cmderr = client.exec_command('sudo criu dump --tree '+job+' -D /home/ubuntu/criu-chamber')
+		print("jobs on node "+node.name+" suspended")
+		newNode = self.create_node(name=name, image='cloud-mixer-image-2', size=dest_size, provider=dest_provider)
+		print("new node "+name+" created")
+		newNode = self.wait_until_running([newNode])[0]
+		cmdin, cmdout, cmderr = client.exec_command('rsync -a -e "ssh -i .ssh/static_pair.pem" --super /home/ubuntu ubuntu@'+newNode.public_ips[0]+':/home')
+		print("synced persistent data and process images")
+		client.close()
+		self.destroy_node(node)
+		print("original node destroyed")
+		try:
+			print("restarting processes")
+			clientB = paramiko.client.SSHClient()
+			clientB.load_system_host_keys()
+			clientB.connect(newNode.public_ips[0], username='ubuntu', key_filename=list(self.sshKey.values())[0])
+			clientB.exec_command('sudo criu restore -d -D /home/ubuntu/criu-chamber')
+		except Exception as e:
+			print(traceback.format_exc())
+		finally:
+			return newNode
 
