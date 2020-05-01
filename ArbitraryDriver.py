@@ -280,7 +280,7 @@ class ArbitraryDriver(NodeDriver):
 		print("jobs on node "+node.name+" suspended")
 		newNode = self.create_node(name=name, image='cloud-mixer-image-2', size=dest_size, provider=dest_provider)
 		print("new node "+name+" created")
-		newNode = self.wait_until_running([newNode])[0]
+		newNode = self.wait_until_running([newNode])[0][0]
 		cmdin, cmdout, cmderr = client.exec_command('rsync -a -e "ssh -i .ssh/static_pair.pem" --super /home/ubuntu ubuntu@'+newNode.public_ips[0]+':/home')
 		print("synced persistent data and process images")
 		client.close()
