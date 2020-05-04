@@ -127,7 +127,7 @@ def main():
     # Perfkit calls add_entry
     # DBClient
     # TODO a http-server
-    # on GET request, retrieve metric
+    # on POST request, retrieve metric data
 
 
 if __name__ == "__main__":

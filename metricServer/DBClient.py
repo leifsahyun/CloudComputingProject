@@ -239,6 +239,7 @@ def test():
 
     print("MySQL client Test") #use logging.DEBUG
     cli=DBClient()
+    
     cli.help()
     cli.add_instance_type(example_instance)
     cli.add_entry(example_entry)
