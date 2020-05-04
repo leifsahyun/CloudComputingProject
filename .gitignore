@@ -5,3 +5,5 @@ airy-strength-272318-4a4149e9ce8f.json
 keys/*.json
 keys/*.pem
 ! keys/template_keys.json
+*.pyc 
+criu-chamber/*
