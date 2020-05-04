@@ -24,10 +24,9 @@ def threaded(fn, interval, unit="sec"):
 #     r = requests.post(url = API_ENDPOINT, data = data) 
      
 
- 
 
 #class Recommender(MetricsClient):
-class Recommender(objects):
+class Recommender(object):
 
     # the reccommender has 2 timers one for the regular metrics data update
     # the second, optional one is to check if the current instance is able to satisfy requirements 
@@ -64,7 +63,7 @@ class Recommender(objects):
         #TODO: filter already-up-to-date instances
         predata={"intances":self. candidates}
 
-        r = requests.post(url = API_ENDPOINT,headers=headers, data = json.dumps(predata)) 
+        r = requests.post(url = url,headers=headers, data = json.dumps(predata)) 
         #TODO: match reveiced instances wit requested?
 
         resp_hdr=r.headers
@@ -83,7 +82,7 @@ class Recommender(objects):
         # process request
 
     #consider making this a staticmethod
-    def get_candidates():    
+    def get_candidates(self):    
     # look up 
         raise NotImplementedError
 
@@ -113,7 +112,7 @@ class Recommender(objects):
           
         scores = {key:self.eval(instance) for key, instance  in instances}
 
-        best=min(dic, key=dic.get)
+        best=min(scores, key=scores.get)
         print(" The instance " + instances[best]+" was evaluated as the best candidate")
 
         return instances[best] 
@@ -180,7 +179,7 @@ class Metric(object):
             self.op= lambda v: int(v == self.treshold)
 
         else:   
-            print "Param type is invalid"
+            print("Param type is invalid")
             pass #-1
 
     def eval(self, val):

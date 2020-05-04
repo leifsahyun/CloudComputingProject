@@ -13,7 +13,7 @@ else:
 import json
 #import DBclient
 
-API_Key = "c3d4e51234sa5"
+API_Key = "c3d4e51234sa5" #clearly not implemented yet
 
 DEF_HOST_NAME = "localhost" # !!!REMEMBER TO CHANGE THIS!!!
 DEF_PORT_NUMBER = 8080 # Maybe set this to 9000.
@@ -68,9 +68,11 @@ class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
             #   ...
 
             metricdata={} #class object?
+            #FUTURE: prevent race condition for DB access
             if post_data.has_key("instances"):
                 for instkey in post_data["instances"]: 
-                    metricdata[instkey]=dummy_metrics  # client.get_last(instance)
+                    #metricdata[instkey]=dummy_metrics  # 
+                    metricdata[instkey] = self.dbc.get_last(instkey)
                 
                 self.wfile.write(json.dumps(metricdata)) 
 
