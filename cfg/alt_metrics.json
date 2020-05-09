@@ -1,0 +1,22 @@
+{
+    "latency":{
+        "treshold":"90",
+        "type":"lessAA",
+        "alpha":"0.8"
+    },
+    "tail-latency":{
+        "treshold":"150",
+        "type":"less",
+        "alpha":"1"
+    },
+    "capacity":{
+        "treshold":"12",
+        "type":"more",
+        "alpha":"1.2"
+    },
+    "availability":{
+        "treshold":"95",
+        "type":"more",
+        "alpha":"1.2"
+    }
+}
