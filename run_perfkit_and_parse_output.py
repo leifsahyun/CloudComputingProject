@@ -97,4 +97,3 @@ if __name__ == "__main__":
         avg_score = sum(coremark_scores) / len(coremark_scores)
         print("Average Max Latency of Ping: {} ms".format(avg_score))
 
-# os.remove(json_filepath)
