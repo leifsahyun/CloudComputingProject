@@ -66,7 +66,7 @@ try:
 			#print(size_row)
 			ids=size_row['name'].split('-')
 			size_row['type'] = ids[0]
-			size_row['size'] = "-".join(ids[1,2])
+			size_row['size'] = "-".join(ids[1:])
 			
 			size_row['gpu']=size_row['extra'].get('gpu',0)
 			size_row['cpu']=size_row['extra'].get('guestCpus',0) #We ignore cpu type for now, this is why benchmarking is neccesary.
@@ -74,6 +74,7 @@ try:
 			size_row['provider'] = 'GCE'
 
 		#GCE instances have attachable CPUS. LibCloud is note supporting these yet
+		#It's filed name is probably 'accelerator'
 
 		# compute:
 		# * nvidia-tesla-t4
@@ -87,7 +88,7 @@ try:
 		# * nvidia-tesla-p4-vws:
 			
 			
-			writer.writerow(vars(size_row))
+			writer.writerow(size_row)
 except IOError:
     print("I/O error")
 
@@ -110,7 +111,7 @@ try:
 
 			size_row['provider'] = 'AWS'
 			#print(size_row)
-			writer.writerow(vars(size_row))
+			writer.writerow(size_row)
 
 except IOError:
     print("I/O error")

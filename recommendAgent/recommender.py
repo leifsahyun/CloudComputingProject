@@ -1,8 +1,11 @@
 #! /usr/bin/env python3
 
 from enum import Enum
+import operator
+from functools import reduce
 import time, threading
 import requests, json
+
 from recommendAgent.metrics import Metric
 
 API_Key = "c3d4e51234sa5"
@@ -93,37 +96,42 @@ class Recommender(object):
   
     # need to reformat this: DONE, test
     #  instance[param] is an int/float, and self.metric is a dict of metrics
-    def eval(self,instance):
+    def eval(self,instance): #use reward_func
         #TODO make this a list comparison
-        sum=0
         #IF dict:
         # for name, metric in self.metrics:
         #    sum+=metric.eval(instance[name])
         #IF list:
-        for metric in self.metrics:
-           sum+=metric.eval(instance[metric.name])
-        return sum
-
+        return sum(map(lambda m:m.eval(instance[m.name]),self.metrics))
+        #func is a reduce(lambda x,y: ..., list)
+        # OR func(list)
 
     # Evaluate if given
-    def eval_pass(self):
-        pass
+    def eval_bool(self,instance):
+        return all(map(lambda m:m.eval_bool(instance[m.name]),self.metrics))
+
 
     def set_reward_func(self,fun):
         #check if len(args) match
-        self.eval=fun
+        self.reward_func=fun
 
     def self_check(self):
         pass
 
     def recommend(self,instances):
-          
-        scores = {key:self.eval(instance) for key, instance  in instances}
+        
+        #dict of instances(dict)
+        #scores = {key:self.eval(instance) for key, instance  in instances}
+        #lit of instances(dict)
+        scores = {instance['instance_id']:self.eval(instance) for instance  in instances}
 
         best=min(scores, key=scores.get)
-        print(" The instance " + instances[best]+" was evaluated as the best candidate")
+        #dict of instances(dict)
+        # instances[best]
+        #list
+        print(" The instance " + best+" was evaluated as the best candidate")
 
-        return instances[best] 
+        return best
 
         #make this more analytic, with non-certain scores and close alternatives
 
