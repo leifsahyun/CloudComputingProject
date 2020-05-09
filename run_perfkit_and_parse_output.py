@@ -1,12 +1,10 @@
-# code to copy over json file:
-# scp -i test_25apr.pem ubuntu@ec2-54-91-148-57.compute-1.amazonaws.com:/tmp/perfkitbenchmarker/runs/b6d5c331/perfkitbenchmarker_results.json $HOME/
-
 import json
 import os
 import sys
 from os.path import abspath
 import re
 import subprocess
+
 
 def run_benchmarks(provider, benchmarks, machine_type):
     perfkit_command = "./pkb.py --cloud={} --benchmarks={} --machine_type={}".format(provider, ",".join(benchmarks),
@@ -63,13 +61,13 @@ def run_benchmarks(provider, benchmarks, machine_type):
         else:
             parsed_dict[top_level_key] = {metric: [res["value"]]}
 
-        return parsed_dict
+    return parsed_dict
 
 
 if __name__ == "__main__":
     # config perfkit variables
     provider = "GCP"
-    benchmarks = ["coremark", "ping"]  # also coremark
+    benchmarks = ["coremark", "ping"]
     machine_type = "f1-micro"
 
     parsed_dict = run_benchmarks(provider, benchmarks, machine_type)
