@@ -13,7 +13,7 @@ except:
 	print("failed to read key file")
 	exit()
 
-IMAGE_ID = 'ami-0fc20dd1da406780b'
+IMAGE_ID = 'ami-0fc20dd1da4Excellent job with the Previous Work section!06780b'
 SIZE_ID = 't2.micro'
 
 print("started script")
