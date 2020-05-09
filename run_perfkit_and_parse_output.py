@@ -15,7 +15,15 @@ def run_benchmarks(provider, benchmarks, machine_type):
     process = subprocess.Popen(perfkit_command.split(sep=" "),
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
+
+    stdout, stderr = None, None
+    try:
+        stdout, stderr = process.communicate(timeout=45*60)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        stdout, stderr = process.communicate()
+        print("Error. Benchmark timeout expired.")
+        return None
     output = stdout.decode('utf-8')
 
     # parse perfkit output
