@@ -142,17 +142,17 @@ class ArbitraryDriver(NodeDriver):
 		return node
 
 	def check_and_migrate(self, node, slos):
-		#if self.recommender.eval(node) > slos['reward']:
 		provider = None
 		size = None
 		#size = self.recommender.recommend(self.list_sizes())
-		sizeDriver = size.driver
-		for p in self.providerDrivers.keys():
-			if self.providerDrivers[p] == sizeDriver:
-				provider = p
-		return self.migrate_node(node, provider, size)
-		#else:
-			#return node
+		if size is not None and size.name != node.size.name:
+			sizeDriver = size.driver
+			for p in self.providerDrivers.keys():
+				if self.providerDrivers[p] == sizeDriver:
+					provider = p
+			return self.migrate_node(node, provider, size)
+		else:
+			return node
 		
 	
 	def create_node(self, name, image, size, provider=None, location=None, ex_keyname=None, ex_security_groups=None):
@@ -204,21 +204,20 @@ class ArbitraryDriver(NodeDriver):
 		now = start
 		success = False
 		googleSshKey = list(self.sshKey.keys())[0]
+		key = paramiko.rsakey.RSAKey.from_private_key_file(list(self.sshKey.values())[0])
+		attempt = 1
 		while now - start < 100 and not success:
-			ssh = subprocess.Popen(["ssh", "-i", self.sshKey[googleSshKey], "-o", "StrictHostKeyChecking=no", "%s@%s" % (googleSshKey, node.public_ips[0]), "true;"],
-						shell=False,
-						stdout=subprocess.PIPE,
-						stderr=subprocess.PIPE)
-			while ssh.poll() is None:
-				now = time.time()
-				if now-start>100:
-					raise IOError("timeout establishing ssh connection")
-			if ssh.poll() == 0:
+			try:
+				client = paramiko.client.SSHClient()
+				client.set_missing_host_key_policy(paramiko.client.WarningPolicy)
+				client.load_system_host_keys()
+				client.connect(node.public_ips[0], username='static_pair', pkey=key)
+				client.close()
 				success = True
-				break
-			else:
-				print("making another ssh attempt")
+			except Exception as e:
+				print("attempt "+str(attempt)+" failed to connect")
 			now = time.time()
+			attempt = attempt+1
 		if success:
 			print("ssh connection established")
 			return node
@@ -226,9 +225,18 @@ class ArbitraryDriver(NodeDriver):
 			raise IOError("timeout establishing ssh connection")
 	
 	# Runs an arbitrary job (a bash command) on an arbitrary node
-	def run_job(self, node, job, timeout=None, silent=False, user=None):
+	# node: a LibCloud Compute Node
+	# job: a string bash command
+	# silent: whether to print info about the job
+	# user: username and user space to execute the command under
+	# callback: function to call on job completion; called with string lists stdout, stderr, and int exit status; each line of output is a string in the lists
+	def run_job(self, node, job, silent=False, user=None, callback=None):
 		if not silent:
 			print("Running job '%s'" % job)
+		if callback is None and not silent:
+			callback = self.default_job_completion
+		elif callback is None and silent:
+			callback = lambda arg1, arg2: True
 		if user is None:
 			if type(node.driver) == get_driver(Provider.GCE):
 				user = list(self.sshKey.keys())[0]
@@ -236,34 +244,34 @@ class ArbitraryDriver(NodeDriver):
 				user = "ubuntu"
 		if user is None:
 			raise RuntimeError("Must define user parameter if not not running on a GCE or EC2 node")
-		ssh = subprocess.Popen(["ssh", "-i", list(self.sshKey.values())[0], "-o", "StrictHostKeyChecking=no", "%s@%s" % (user, node.public_ips[0]), job],
-						shell=False,
-						stdout=subprocess.PIPE,
-						stderr=subprocess.PIPE)
-		# Run the job until it completes or a 100 second timeout
-		if timeout is None:
-			timeout = 100
-		start = time.time()
-		now = start
-		last = now
-		while ssh.poll() is None and now-start<timeout:
-			now = time.time()
-			#periodic printing to show the script is alive
-			if not silent and now-last > 5:
-				print("waiting for job to complete")
-				last = now
-		if ssh.poll() is None:
-			if not silent:
-				print("job timed out")
-			ssh.kill()
-		elif not silent:
-			print("job finished")
-		result = ssh.stdout.readlines()
-		if result == []:
-			error = ssh.stderr.readlines()
-			raise RuntimeError("ERROR: %s" % str(error))
+		client = paramiko.client.SSHClient()
+		client.set_missing_host_key_policy(paramiko.client.WarningPolicy)
+		client.load_system_host_keys()
+		key = paramiko.rsakey.RSAKey.from_private_key_file(list(self.sshKey.values())[0])
+		client.connect(node.public_ips[0], username='static_pair', pkey=key)
+		def wait_for_completion():
+			exit_status = stdout.channel.recv_exit_status()
+			result = stdout.readlines()
+			result_err = stdout.readlines()
+			callback(result, result_err, exit_status)
+			client.close()
+		# Run the job
+		print("job start "+str(time.time()))
+		stdin, stdout, stderr = client.exec_command(job)
+		cb_thread = threading.Thread(target = wait_for_completion)
+		cb_thread.start()
+		return cb_thread
+		
+	def default_job_completion(self, stdout, stderr, exit_status):
+		print("job returned "+str(time.time()))
+		if exit_status == 0:
+			for line in stdout:
+				print(line)
+			if stderr != []:
+				print("WARNINGS: %s" % str(stderr))
 		else:
-			return result
+			raise RuntimeError("ERRORS: %s" % str(stderr))
+                
 			
 	def destroy_node(self, node):
 		return node.driver.destroy_node(node)
