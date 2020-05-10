@@ -20,17 +20,11 @@ print("setting evaluation metric to select cheapest node size")
 driver.recommender.metrics = [Metric("price", 0.02, type_id=Metric.TYPE.LESS)]
 print("creating node")
 node = driver.create_managed_node('integration-test-node')
-if node.size is None:
-	print("node size is None")
-	raise RuntimeException()
 print("node created")
 # Using try/except/finally ensures the node is destroyed when we are done
 try:
 	print("waiting for node to be ready")
 	node = driver.wait_for_ssh(node)
-	if node.size is None:
-		print("node size is None")
-		raise RuntimeException()
 	print("running sleep job (2 minutes)")
 	jobname = "sleep-job"
 	job = driver.run_job(node, "sleep 120 && echo complete", name=jobname)
@@ -40,9 +34,6 @@ try:
 	driver.recommender.metrics = [Metric("price", 0.02, type_id=Metric.TYPE.MORE)]
 	print("triggering periodic migration check")
 	node = driver.check_and_migrate(node)
-	if node.size is None:
-		print("node size is None")
-		raise RuntimeException()
 	print("running nodes:")
 	nodes = driver.list_nodes()
 	for n in nodes:
