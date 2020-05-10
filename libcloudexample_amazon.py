@@ -28,7 +28,9 @@ sizes = driver.list_sizes()
 print("got sizes:")
 #print(sizes)
 print(list(vars(sizes[0]).keys()))
-print(vars(sizes[0]))
+#print(vars(sizes[0]))
+for sz in sizes:
+	print(vars(sz))
 
 images = driver.list_images()
 selectedSize = [s for s in sizes if s.id == SIZE_ID][0]

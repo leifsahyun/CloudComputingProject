@@ -15,16 +15,17 @@ DEF_PORT_NUMBER = 8080
 
 units={}
 
-_sample_sz_name = 'a1.2xlarge'
-_sample_candidates = ['a1.4xlarge','a1.large', 'a1.medium']
+sample_sz_name = 'a1.2xlarge'
+sample_candidates = ['a1.4xlarge','a1.large', 'a1.medium']
 
+#timeloop does exactly that and more
 #decorator for timer threads
-def threaded(fn, interval, unit="sec"):
-    def wrapper(*args, **kwargs):
-        thread = threading.Thread(target=fn, args=args, kwargs=kwargs)
-        thread.start()
-        return thread
-    return wrapper
+# def threaded(fn, interval, unit="sec"):
+#     def wrapper(*args, **kwargs):
+#         thread = threading.Thread(target=fn, args=args, kwargs=kwargs)
+#         thread.start()
+#         return thread
+#     return wrapper
 
 # class MetricsClient(object):
 #     def __init__(self):

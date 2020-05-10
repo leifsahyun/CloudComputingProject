@@ -48,29 +48,36 @@ aws_sizes = aws_driver.list_sizes()
 # print(vars(aws_sizes[0]))
 
 #size_hdrs=list(vars(aws_sizes[0]).keys())
-size_hdrs=['id','tag','type','size', 'ram', 'cpu','disk','gpu', 'bandwidth', 'price']
+size_hdrs=['id','name','type','size', 'ram', 'cpu','disk','gpu', 'bandwidth', 'price']
 #could use UUID with get_uuid on sizes
 print('writing files')
 
 
 ## Google Cloud Engine ##
 
+#replace dict values
+null_val=''
+def dict_replace(dic,old,new):
+	pass
+	#for k,v in dic:
+		#{dic[k]new if dick[k]==old)}
+
+
 csv_file = "gce_instances.csv"
 try:
 	with open(csv_file, 'w') as csvfile:
 		writer = csv.DictWriter(csvfile, fieldnames=size_hdrs, extrasaction='ignore')
 		writer.writeheader()
-		c=1000
 		for sz in g_sizes:	
 			size_row=vars(sz)
 			#print(size_row)
 			ids=size_row['name'].split('-')
 			size_row['type'] = ids[0]
-			size_row['size'] = "-".join(ids[1:])
-			c+=1
-			size_row['id']=c
+			size_row['size'] = "".join(ids[1:])
 			size_row['gpu']=size_row['extra'].get('gpu',0)
-			size_row['cpu']=size_row['extra'].get('guestCpus',0) #We ignore cpu type for now, this is why benchmarking is neccesary.
+			size_row['cpu']=size_row['extra'].get('guestCpus',0) #We ignore cpu type for now, this is why benchmarking is necessary.
+
+			dict_replace(size_row,None,"Null")
 
 			size_row['provider'] = 'GCE'
 
@@ -100,6 +107,7 @@ try:
 	with open(csv_file, 'w') as csvfile:
 		writer = csv.DictWriter(csvfile, fieldnames=size_hdrs, extrasaction='ignore')
 		writer.writeheader()
+		c=1000
 		for sz in aws_sizes:
 			size_row=vars(sz)
 			
@@ -107,10 +115,14 @@ try:
 			size_row['type'] = ids[0]
 			size_row['size'] = ids[1] 
 
+			c+=1
+			size_row['id']=c
 			size_row['gpu'] = size_row['extra'].get('gpu',0)
 			size_row['cpu'] = size_row['extra'].get('vcpu',0)
 
 			size_row['provider'] = 'AWS'
+			dict_replace(size_row,None,'Null')
+
 			#print(size_row)
 			writer.writerow(size_row)
 

@@ -60,12 +60,13 @@ CREATE TABLE `instance_sizes` (
   `provider` varchar(8) DEFAULT NULL,
   `type` varchar(6) DEFAULT NULL,
   `size` varchar(12) DEFAULT NULL,
-  `cpu` int DEFAULT NULL,
-  `gpu` int DEFAULT NULL,
-  `memory` int DEFAULT NULL,
-  `bandwith` int DEFAULT NULL,
+  `cpu` int DEFAULT '0',
+  `gpu` int DEFAULT '0',
+  `memory` int DEFAULT '0',
+  `bandwidth` int DEFAULT '0',
+  `price` float DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1138 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -74,6 +75,7 @@ CREATE TABLE `instance_sizes` (
 
 LOCK TABLES `instance_sizes` WRITE;
 /*!40000 ALTER TABLE `instance_sizes` DISABLE KEYS */;
+INSERT INTO `instance_sizes` (`id`, `name`, `provider`, `type`, `size`, `cpu`, `gpu`, `memory`, `bandwidth`, `price`) VALUES (1008,'c4.8xlarge',NULL,'61440','8xlarge',0,0,10,2,0),(1012,'c5.18xlarge',NULL,'147456','18xlarge',0,0,25,3,0),(1014,'c5.2xlarge',NULL,'16384','2xlarge',0,0,10,0,0),(1015,'c5.4xlarge',NULL,'32768','4xlarge',0,0,10,1,0),(1016,'c5.9xlarge',NULL,'73728','9xlarge',0,0,10,2,0),(1017,'c5.large',NULL,'4096','large',0,0,10,0,0),(1018,'c5.xlarge',NULL,'8192','xlarge',0,0,10,0,0),(1020,'c5d.18xlarge',NULL,'147456','18xlarge',1800,0,25,3,0),(1022,'c5d.2xlarge',NULL,'16384','2xlarge',200,0,10,0,0),(1023,'c5d.4xlarge',NULL,'32768','4xlarge',400,0,10,1,0),(1024,'c5d.9xlarge',NULL,'73728','9xlarge',900,0,10,2,0),(1025,'c5d.large',NULL,'4096','large',50,0,10,0,0),(1026,'c5d.xlarge',NULL,'8192','xlarge',100,0,10,0,0),(1035,'d2.8xlarge',NULL,'249856','8xlarge',48000,0,10,6,0),(1037,'g3.16xlarge',NULL,'499712','16xlarge',0,4,20,5,0),(1038,'g3.4xlarge',NULL,'124928','4xlarge',0,1,10,1,0),(1039,'g3.8xlarge',NULL,'249856','8xlarge',0,2,10,2,0),(1047,'h1.16xlarge',NULL,'262144','16xlarge',16000,0,25,4,0),(1048,'h1.2xlarge',NULL,'32768','2xlarge',2000,0,10,0,0),(1049,'h1.4xlarge',NULL,'65536','4xlarge',4000,0,10,1,0),(1050,'h1.8xlarge',NULL,'131072','8xlarge',8000,0,10,2,0),(1053,'i2.8xlarge',NULL,'249856','8xlarge',6400,0,10,7,0),(1055,'i3.16xlarge',NULL,'499712','16xlarge',15200,0,20,5,0),(1056,'i3.2xlarge',NULL,'62464','2xlarge',1900,0,10,1,0),(1057,'i3.4xlarge',NULL,'124928','4xlarge',3800,0,10,1,0),(1058,'i3.8xlarge',NULL,'249856','8xlarge',7600,0,10,2,0),(1059,'i3.large',NULL,'15616','large',475,0,10,0,0),(1060,'i3.xlarge',NULL,'31232','xlarge',950,0,10,0,0),(1068,'m4.10xlarge',NULL,'163840','10xlarge',0,0,10,2,0),(1069,'m4.16xlarge',NULL,'262144','16xlarge',0,0,20,3,0),(1074,'m5.12xlarge',NULL,'196608','12xlarge',0,0,10,2,0),(1076,'m5.24xlarge',NULL,'393216','24xlarge',0,0,25,5,0),(1077,'m5.2xlarge',NULL,'32768','2xlarge',0,0,10,0,0),(1078,'m5.4xlarge',NULL,'65536','4xlarge',0,0,10,1,0),(1080,'m5.large',NULL,'8192','large',0,0,10,0,0),(1082,'m5.xlarge',NULL,'16384','xlarge',0,0,10,0,0),(1097,'m5d.12xlarge',NULL,'196608','12xlarge',1800,0,10,3,0),(1099,'m5d.24xlarge',NULL,'393216','24xlarge',3600,0,25,5,0),(1100,'m5d.2xlarge',NULL,'32768','2xlarge',300,0,10,0,0),(1101,'m5d.4xlarge',NULL,'65536','4xlarge',600,0,10,1,0),(1103,'m5d.large',NULL,'8192','large',75,0,10,0,0),(1104,'m5d.xlarge',NULL,'16384','xlarge',150,0,10,0,0),(1121,'p2.16xlarge',NULL,'749568','16xlarge',0,16,20,14,0),(1122,'p2.8xlarge',NULL,'499712','8xlarge',0,8,10,7,0),(1124,'p3.16xlarge',NULL,'499712','16xlarge',0,8,25,24,0),(1125,'p3.2xlarge',NULL,'62464','2xlarge',0,1,10,3,0),(1126,'p3.8xlarge',NULL,'249856','8xlarge',0,4,10,12,0),(1129,'r3.8xlarge',NULL,'249856','8xlarge',640,0,10,3,0),(1132,'r4.16xlarge',NULL,'499712','16xlarge',0,0,20,4,0),(1133,'r4.2xlarge',NULL,'62464','2xlarge',0,0,10,1,0),(1134,'r4.4xlarge',NULL,'124928','4xlarge',0,0,10,1,0),(1135,'r4.8xlarge',NULL,'249856','8xlarge',0,0,10,2,0),(1136,'r4.large',NULL,'15616','large',0,0,10,0,0),(1137,'r4.xlarge',NULL,'31232','xlarge',0,0,10,0,0);
 /*!40000 ALTER TABLE `instance_sizes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -117,4 +119,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2020-05-10  2:04:54
+-- Dump completed on 2020-05-10  4:06:38
