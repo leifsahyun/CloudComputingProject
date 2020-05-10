@@ -20,9 +20,9 @@ try:
 	print("waiting for node to be ready")
 	node = driver.wait_for_ssh(node)
 	print("running job to find current date")
-	current_date = driver.run_job(node, "date", user="ubuntu")
-	print("job complete:")
-	print(current_date)
+	current_date = driver.run_job(node, "sleep 120 && echo complete", user="ubuntu")
+	print("current jobs running on node:")
+	print(repr(driver.jobs[node.name]))
 	print("node migration commencing")
 	if destination_provider == Provider.EC2:
 		node = driver.migrate_node(node, dest_provider=destination_provider, dest_size=driver.get_size('t2.micro', provider=Provider.EC2), name='test-node-b')
@@ -30,6 +30,9 @@ try:
 		node = driver.migrate_node(node, dest_provider=destination_provider, dest_size=driver.get_size('n1-standard-1', provider=Provider.GCE), name='test-node-b')
 	print("migration complete")
 	print(node.name)
+	print("current jobs running on nodes:")
+	print(repr(driver.jobs))
+	driver.jobs[node.name][0].wait_for_completion()
 except Exception as e:
 	print(traceback.format_exc())
 finally:

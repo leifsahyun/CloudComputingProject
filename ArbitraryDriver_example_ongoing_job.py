@@ -19,7 +19,7 @@ try:
 	print("waiting for node to be ready")
 	node = driver.wait_for_ssh(node)
 	print("running sleep job")
-	job = driver.run_job(node, "sleep 100 && echo complete")
+	job = driver.run_job(node, "sleep 10 && echo complete")
 	print("current jobs running on node:")
 	print(repr(driver.jobs[node.name]))
 	job.join()

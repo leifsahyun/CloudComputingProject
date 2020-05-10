@@ -282,17 +282,21 @@ class ArbitraryDriver(NodeDriver):
 		for job in suspended_jobs:
 			if job.status == JobStatus.RUNNING:
 				job.stop()
-				cmdin, cmdout, cmderr = client.exec_command('sudo criu dump --tree '+job.pid+' -D /home/ubuntu/criu-chamber')
-				cmdout.recv_exit_status()
+				cmdin, cmdout, cmderr = client.exec_command('sudo criu dump --tree '+str(job.pid)+' -D /home/ubuntu/criu-chamber')
+				exit_code = cmdout.channel.recv_exit_status()
+				if exit_code!=0:
+					print(cmderr.readlines())
 				if job.client:
 					job.client.close()
-				print("job '"+job.name+"' suspended")
-		print("all jobs on node "+node.name+" suspended")
+				print("job '"+str(job.name)+"' suspended")
+		print("all jobs on node "+str(node.name)+" suspended")
 		newNode = self.create_managed_node(name=name, image=self.cloudMixerImageId, size=dest_size, provider=dest_provider)
-		print("new node "+name+" created")
+		print("new node "+str(newNode.name)+" created")
 		newNode = self.wait_for_ssh(newNode)
-		cmdin, cmdout, cmderr = client.exec_command('rsync -a -e "ssh -i .ssh/static_pair.pem" --super /home/ubuntu ubuntu@'+newNode.public_ips[0]+':/home')
-		cmdout.recv_exit_status()
+		cmdin, cmdout, cmderr = client.exec_command('rsync -a -e "ssh -i .ssh/static_pair.pem" --super /home/ubuntu ubuntu@'+str(newNode.public_ips[0])+':/home')
+		exit_code = cmdout.channel.recv_exit_status()
+		if exit_code!=0:
+			print(cmderr.readlines())
 		print("synced persistent data and process images")
 		client.close()
 		self.destroy_node(node)
@@ -304,14 +308,16 @@ class ArbitraryDriver(NodeDriver):
 			clientB.load_system_host_keys()
 			clientB.connect(newNode.public_ips[0], username='ubuntu', pkey=key)
 			cmdin, cmdout, cmderr = clientB.exec_command('sudo criu restore -d -D /home/ubuntu/criu-chamber')
-			cmdout.recv_exit_status()
+			exit_code = cmdout.channel.recv_exit_status()
+			if exit_code!=0:
+				print(cmderr.readlines())
 			for job in suspended_jobs:
 				job.node = newNode
 				job.sshKey = key
 				job.status = JobStatus.RUNNING
 				job.setup_client(user='ubuntu')
-				job.stdout = job.client.exec_command('strace -p '+job+' -e write=1')[1]
-				job.stderr = job.client.exec_command('strace -p '+job+' -e write=2')[1]
+				job.stdout = job.client.exec_command('strace -p '+str(job.pid)+' -e write=1')[1]
+				job.stderr = job.client.exec_command('strace -p '+str(job.pid)+' -e write=2')[1]
 				job.cb_thread = threading.Thread(target = job._wait_for_completion)
 				if newNode.name in self.jobs:
 					self.jobs[newNode.name].append(job)
