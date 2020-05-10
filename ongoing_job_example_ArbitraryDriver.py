@@ -19,8 +19,12 @@ try:
 	print("waiting for node to be ready")
 	node = driver.wait_until_running(node)[0][0]
 	print("running sleep job")
-	current_date = driver.run_job(node, "sleep 10")
+	current_date = driver.run_job(node, "sleep 100 && echo complete")
+	print("current jobs on node")
+	print(repr(driver.jobs[node]))
 	current_date.join()
+	print("current jobs on node")
+	print(repr(driver.jobs[node]))
 except Exception as e:
 	print(traceback.format_exc())
 finally:

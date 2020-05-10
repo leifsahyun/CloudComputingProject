@@ -255,9 +255,15 @@ class ArbitraryDriver(NodeDriver):
 			result_err = stdout.readlines()
 			callback(result, result_err, exit_status)
 			client.close()
+			self.jobs[node.name].remove(pid)
 		# Run the job
 		print("job start "+str(time.time()))
-		stdin, stdout, stderr = client.exec_command(job)
+		stdin, stdout, stderr = client.exec_command("echo $$ && "+job+" &")
+		pid = int(stdout.readline())
+		if node.name in self.jobs:
+			self.jobs[node.name].append(pid)
+		else:
+			self.jobs[node.name] = [pid]
 		cb_thread = threading.Thread(target = wait_for_completion)
 		cb_thread.start()
 		return cb_thread
