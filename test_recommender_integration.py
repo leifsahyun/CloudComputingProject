@@ -1,4 +1,5 @@
 from ArbitraryDriver import ArbitraryDriver
+from recommendAgent.metrics import Metric
 from libcloud.compute.types import Provider
 import traceback
 # An example of how to use the ArbitraryDriver class
@@ -14,6 +15,8 @@ driver.avail_sizes = avail_sizes
 print("will pick from following node sizes:")
 for s in avail_sizes:
     print(s.name)
+print("setting evaluation metric to select cheapest node size")
+driver.recommender.metrics = [Metric("price", 0, type_id=Metric.TYPE.LESS)]
 print("creating node")
 node = driver.create_managed_node('integration-test-node')
 print("node created")

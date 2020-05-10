@@ -4,6 +4,7 @@ from libcloud.compute.base import NodeDriver
 from libcloud.compute.base import Node
 from libcloud.compute.base import KeyPair
 from libcloud.compute.base import NodeAuthPassword
+from enum import Enum
 from recommendAgent.recommender import Recommender
 import subprocess
 import traceback
@@ -99,6 +100,14 @@ class ArbitraryDriver(NodeDriver):
 		for driver in self.providerDrivers.values():
 			images.extend(driver.list_images())
 		return images
+
+	def list_nodes(self, provider=None):
+		if provider is not None:
+			return self.providerDrivers[provider].list_nodes()
+		nodes = []
+		for driver in self.providerDrivers.values():
+			nodes.extend(driver.list_nodes())
+		return nodes
 		
 	def get_image(self, image_id, provider=None):
 		# Some providers have implemented a quick get_image function,
@@ -140,6 +149,8 @@ class ArbitraryDriver(NodeDriver):
 			for s in self.avail_sizes:
 				if s.name == size_id:
 					size = s
+			if size is None:
+				raise RuntimeError("recommended node size not in list of available node sizes")
 			sizeDriver = size.driver
 			if provider is None:
 				for p in self.providerDrivers.keys():
@@ -156,8 +167,8 @@ class ArbitraryDriver(NodeDriver):
 		print("checking for better instance")
 		provider = None
 		size = None
-		size = self.recommender.recommend(self.avail_sizes)
-		if size is not None and size.name != node.size.name:
+		size_id = self.recommender.recommend(self.avail_sizes)
+		if size_id is not None and size_id != node.size.name:
 			sizeDriver = size.driver
 			for p in self.providerDrivers.keys():
 				if self.providerDrivers[p] == sizeDriver:
@@ -173,6 +184,7 @@ class ArbitraryDriver(NodeDriver):
 			return None
 		if not provider in self.providerDrivers.keys():
 			raise RuntimeError("No defined implementation for the provider specified")
+		node = None
 		if provider==Provider.EC2:
 			if ex_keyname is None:
 				keypairs = self.providerDrivers[Provider.EC2].list_key_pairs()
@@ -184,13 +196,15 @@ class ArbitraryDriver(NodeDriver):
 					raise RuntimeError("Could not find a ssh keypair that is both loaded in this driver and registered with Amazon")
 			if ex_security_groups is None:
 				ex_security_groups=["default"]
-			return self.providerDrivers[provider].create_node(name=name, image=image, size=size, ex_keyname=ex_keyname, ex_security_groups=ex_security_groups)
+			node = self.providerDrivers[provider].create_node(name=name, image=image, size=size, ex_keyname=ex_keyname, ex_security_groups=ex_security_groups)
 		elif provider==Provider.GCE:
 			if location is None:
 				location='us-central1-a'
-			return self.providerDrivers[provider].create_node(name=name, image=image, size=size, location=location)
+			node = self.providerDrivers[provider].create_node(name=name, image=image, size=size, location=location)
 		elif provider==Provider.AZURE_ARM:
-			return self.providerDrivers[provider].create_node(name=name, image=image, size=size, auth=NodeAuthPassword('mysecretpassword'), ex_resource_group=self.providerKeys["AZURE_ARM"]["resource_group"], ex_storage_account=self.providerKeys["AZURE_ARM"]["storage_account"], ex_network=keys["AZURE_ARM"]["virtual_network"])
+			node = self.providerDrivers[provider].create_node(name=name, image=image, size=size, auth=NodeAuthPassword('mysecretpassword'), ex_resource_group=self.providerKeys["AZURE_ARM"]["resource_group"], ex_storage_account=self.providerKeys["AZURE_ARM"]["storage_account"], ex_network=keys["AZURE_ARM"]["virtual_network"])
+		node.size = size
+		return node
 	
 	def wait_until_running(self, nodes):
 		driver_node_associations = {}
@@ -209,7 +223,9 @@ class ArbitraryDriver(NodeDriver):
 	# Waits for an ssh connection to be successfully established, or a timeout to be reached
 	# This is especially needed for Google Compute Engine because it requires significant start-up time after successfully returning from driver.wait_until_running before ssh attempts will succeed
 	def wait_for_ssh(self, node):
+		temp_size = node.size
 		node = self.wait_until_running(node)[0][0]
+		node.size = temp_size
 		print("Establishing ssh connection (will take a minute)")
 		start = time.time()
 		now = start
@@ -236,58 +252,17 @@ class ArbitraryDriver(NodeDriver):
 	
 	# Runs an arbitrary job (a bash command) on an arbitrary node
 	# node: a LibCloud Compute Node
-	# job: a string bash command
-	# silent: whether to print info about the job
+	# command: a string bash command
 	# user: username and user space to execute the command under
 	# callback: function to call on job completion; called with string lists stdout, stderr, and int exit status; each line of output is a string in the lists
-	def run_job(self, node, job, silent=False, user=None, callback=None):
-		if not silent:
-			print("Running job '%s'" % job)
-		if callback is None and not silent:
-			callback = self.default_job_completion
-		elif callback is None and silent:
-			callback = lambda arg1, arg2: True
-		if user is None:
-			if type(node.driver) == get_driver(Provider.GCE):
-				user = list(self.sshKey.keys())[0]
-			elif type(node.driver) == get_driver(Provider.EC2):
-				user = "ubuntu"
-		if user is None:
-			raise RuntimeError("Must define user parameter if not not running on a GCE or EC2 node")
-		client = paramiko.client.SSHClient()
-		client.set_missing_host_key_policy(paramiko.client.WarningPolicy)
-		client.load_system_host_keys()
+	def run_job(self, node, command, user="ubuntu", callback=None, name=None):
 		key = paramiko.rsakey.RSAKey.from_private_key_file(list(self.sshKey.values())[0])
-		client.connect(node.public_ips[0], username='static_pair', pkey=key)
-		def wait_for_completion():
-			exit_status = stdout.channel.recv_exit_status()
-			result = stdout.readlines()
-			result_err = stdout.readlines()
-			callback(result, result_err, exit_status)
-			client.close()
-			self.jobs[node.name].remove(pid)
-		# Run the job
-		print("job start "+str(time.time()))
-		stdin, stdout, stderr = client.exec_command("echo $$ && "+job+" &")
-		pid = int(stdout.readline())
+		new_job = Job(command, node, key, callback=callback, name=name)
 		if node.name in self.jobs:
-			self.jobs[node.name].append(pid)
+			self.jobs[node.name].append(new_job)
 		else:
-			self.jobs[node.name] = [pid]
-		cb_thread = threading.Thread(target = wait_for_completion)
-		cb_thread.start()
-		return cb_thread
-		
-	def default_job_completion(self, stdout, stderr, exit_status):
-		print("job returned "+str(time.time()))
-		if exit_status == 0:
-			for line in stdout:
-				print(line)
-			if stderr != []:
-				print("WARNINGS: %s" % str(stderr))
-		else:
-			raise RuntimeError("ERRORS: %s" % str(stderr))
-                
+			self.jobs[node.name] = [new_job]                
+		return new_job.run(user)
 			
 	def destroy_node(self, node):
 		return node.driver.destroy_node(node)
@@ -296,16 +271,28 @@ class ArbitraryDriver(NodeDriver):
 		if name is None:
 			name = node.name+'-copy'
 		client = paramiko.client.SSHClient()
+		client.set_missing_host_key_policy(paramiko.client.WarningPolicy)
 		client.load_system_host_keys()
-		client.connect(node.public_ips[0], username='ubuntu', key_filename=list(self.sshKey.values())[0])
+		key = paramiko.rsakey.RSAKey.from_private_key_file(list(self.sshKey.values())[0])
+		client.connect(node.public_ips[0], username='ubuntu', pkey=key)
+		suspended_jobs = []
 		if node.name in self.jobs:
-			for job in self.jobs[node.name]:
-				cmdin, cmdout, cmderr = client.exec_command('sudo criu dump --tree '+job+' -D /home/ubuntu/criu-chamber')
-		print("jobs on node "+node.name+" suspended")
-		newNode = self.create_node(name=name, image='cloud-mixer-image-2', size=dest_size, provider=dest_provider)
+			suspended_jobs = self.jobs[node.name]
+			self.jobs[node.name] = []
+		for job in suspended_jobs:
+			if job.status == JobStatus.RUNNING:
+				job.stop()
+				cmdin, cmdout, cmderr = client.exec_command('sudo criu dump --tree '+job.pid+' -D /home/ubuntu/criu-chamber')
+				cmdout.recv_exit_status()
+				if job.client:
+					job.client.close()
+				print("job '"+job.name+"' suspended")
+		print("all jobs on node "+node.name+" suspended")
+		newNode = self.create_managed_node(name=name, image=self.cloudMixerImageId, size=dest_size, provider=dest_provider)
 		print("new node "+name+" created")
-		newNode = self.wait_until_running([newNode])[0][0]
+		newNode = self.wait_for_ssh(newNode)
 		cmdin, cmdout, cmderr = client.exec_command('rsync -a -e "ssh -i .ssh/static_pair.pem" --super /home/ubuntu ubuntu@'+newNode.public_ips[0]+':/home')
+		cmdout.recv_exit_status()
 		print("synced persistent data and process images")
 		client.close()
 		self.destroy_node(node)
@@ -313,11 +300,110 @@ class ArbitraryDriver(NodeDriver):
 		try:
 			print("restarting processes")
 			clientB = paramiko.client.SSHClient()
+			clientB.set_missing_host_key_policy(paramiko.client.WarningPolicy)
 			clientB.load_system_host_keys()
-			clientB.connect(newNode.public_ips[0], username='ubuntu', key_filename=list(self.sshKey.values())[0])
-			clientB.exec_command('sudo criu restore -d -D /home/ubuntu/criu-chamber')
+			clientB.connect(newNode.public_ips[0], username='ubuntu', pkey=key)
+			cmdin, cmdout, cmderr = clientB.exec_command('sudo criu restore -d -D /home/ubuntu/criu-chamber')
+			cmdout.recv_exit_status()
+			for job in suspended_jobs:
+				job.node = newNode
+				job.sshKey = key
+				job.status = JobStatus.RUNNING
+				job.setup_client(user='ubuntu')
+				job.stdout = job.client.exec_command('strace -p '+job+' -e write=1')[1]
+				job.stderr = job.client.exec_command('strace -p '+job+' -e write=2')[1]
+				job.cb_thread = threading.Thread(target = job._wait_for_completion)
+				if newNode.name in self.jobs:
+					self.jobs[newNode.name].append(job)
+				else:
+					self.jobs[newNode.name] = [job]
 		except Exception as e:
 			print(traceback.format_exc())
 		finally:
 			return newNode
 
+class JobStatus(Enum):
+	NOT_RUNNING = 1
+	RUNNING = 2
+	FINISHED = 3
+	TERMINATED = 4
+
+class Job:
+	# Job constructor
+	# command: bash command to run
+	# node: a LibCloud Compute Node
+	# sshKey: paramiko key to connect to node
+	# name: name for this job (optional)
+	# callback: function to run on job completion (defaults to printing job's stdout to local stdout)
+	#       callback is called with string lists stdout, stderr, and int exit status; each line of output is a string in the lists
+	def __init__(self, command, node, sshKey, name=None, callback=None):
+		self.command = command
+		self.node = node
+		self.sshKey = sshKey
+		self.status = JobStatus.NOT_RUNNING
+		self.name = name
+		self.callback = callback
+		if self.name is None:
+			self.name = command
+		if self.callback is None:
+			self.callback = self._default_job_completion
+		self.cb_thread = None
+		self.pid = None
+		self.stdout = None
+		self.stderr = None
+
+	def setup_client(self, user="ubuntu"):
+		self.client = paramiko.client.SSHClient()
+		self.client.set_missing_host_key_policy(paramiko.client.WarningPolicy)
+		self.client.load_system_host_keys()
+		self.client.connect(self.node.public_ips[0], username=user, pkey=self.sshKey)
+
+	# Runs this job on an arbitrary node
+	# user: username and user space to execute the command under
+	def run(self, user="ubuntu"):
+		self.setup_client(user)
+		print("Running job '%s'" % self.name)
+		# Run the job
+		print(self.name+" start time: "+str(time.time()))
+		stdin, self.stdout, self.stderr = self.client.exec_command("echo $$ && "+self.command+" &")
+		self.pid = int(self.stdout.readline())
+		self.cb_thread = threading.Thread(target = self._wait_for_completion)
+		self.cb_thread.start()
+		self.status = JobStatus.RUNNING
+		return self.cb_thread
+
+	def stop(self):
+		if self.status != JobStatus.RUNNING:
+			print("job '"+self.name+"' is not running")
+			return
+		self.status = JobStatus.TERMINATED
+			
+
+	def wait_for_completion(self):
+		while self.status==JobStatus.RUNNING:
+			pass
+	
+	def _wait_for_completion(self):
+		while not self.stdout.channel.exit_status_ready() and self.status==JobStatus.RUNNING:
+			pass
+		if self.status != JobStatus.TERMINATED:
+			exit_status = self.stdout.channel.recv_exit_status()
+			self.callback(self.stdout.readlines(), self.stderr.readlines(), exit_status)
+			self.status = JobStatus.FINISHED
+			self.client.close()
+
+	def _default_job_completion(self, stdout, stderr, exit_status):
+		print(self.name+" stop time: "+str(time.time()))
+		if exit_status == 0:
+			for line in stdout:
+				print(line)
+			if stderr != []:
+				print("WARNINGS: %s" % str(stderr))
+		else:
+			raise RuntimeError("ERRORS: %s" % str(stderr))
+
+	def __str__(self):
+		return self.name+": command = "+self.command
+
+	def __repr__(self):
+		return str(self)
