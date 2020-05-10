@@ -1,0 +1,31 @@
+mysql> describe benchmark;
++--------------+--------------+------+-----+-------------------+-------------------+
+| Field        | Type         | Null | Key | Default           | Extra             |
++--------------+--------------+------+-----+-------------------+-------------------+
+| id           | int          | NO   | PRI | NULL              | auto_increment    |
+| inst_id      | int          | NO   | MUL | NULL              |                   |
+| t_entry      | timestamp    | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| cpu_score    | int          | YES  |     | NULL              |                   |
+| latency      | int          | YES  |     | NULL              |                   |
+| tail_latency | int          | YES  |     | NULL              |                   |
+| avail        | decimal(3,2) | YES  |     | 1.00              |                   |
++--------------+--------------+------+-----+-------------------+-------------------+
+7 rows
+
+mysql> describe instance_sizes;
++-----------+-------------+------+-----+---------+------------------+
+| Field     | Type        | Null | Key | Default | Extra            |
++-----------+-------------+------+-----+---------+------------------+
+| id        | int         | NO   | PRI | NULL    | auto_increment   |
+| tag       | varchar(11) | YES  |     | NULL    | STORED GENERATED |
+| name      | varchar(22) | YES  |     | NULL    |                  |
+| provider  | varchar(8)  | YES  |     | NULL    |                  |
+| type      | varchar(6)  | YES  |     | NULL    |                  |
+| size      | varchar(12) | YES  |     | NULL    |                  |
+| cpu       | int         | YES  |     | 0       |                  |
+| gpu       | int         | YES  |     | 0       |                  |
+| ram       | int         | YES  |     | 0       |                  |
+| bandwidth | int         | YES  |     | 0       |                  |
+| price     | float       | YES  |     | 0       |                  |
++-----------+-------------+------+-----+---------+------------------+
+11 rows
