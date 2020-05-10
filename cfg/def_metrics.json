@@ -1,0 +1,23 @@
+{ "metrics":[
+    {
+        "name":"latency",
+        "treshold":90,
+        "type":"less",
+        "alpha":0.8
+    },
+    {   "name":"tail-latency",
+        "treshold":150,
+        "type":"less",
+        "alpha":1
+    },
+    {   "name":"capacity",
+        "treshold":12,
+        "type":"more",
+        "alpha":1.2
+    },
+    {   "name":"availability",
+        "treshold":95,
+        "type":"more",
+        "alpha":1.2
+    }]
+}
