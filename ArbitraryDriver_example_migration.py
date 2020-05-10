@@ -20,7 +20,7 @@ try:
 	print("waiting for node to be ready")
 	node = driver.wait_for_ssh(node)
 	print("running job to find current date")
-	current_date = driver.run_job(node, "sleep 120 && echo complete", user="ubuntu")
+	current_date = driver.run_job(node, 'sleep 120 && echo complete', user="ubuntu", name="test-loop")
 	print("current jobs running on node:")
 	print(repr(driver.jobs[node.name]))
 	print("node migration commencing")
