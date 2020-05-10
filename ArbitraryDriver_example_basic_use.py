@@ -6,28 +6,27 @@ import traceback
 provider_to_use = Provider.GCE
 print("creating driver")
 driver = ArbitraryDriver("keys/keys.json")
-driver.load_pem_ssh_key("keys/static_pair.pem")
+driver.load_pem_ssh_key("keys/EC2_cs520_useast1.pem")
+#to_do, append .pem fikle location to the keys.json
 print("creating node")
 # When using the ArbitraryDriver, the create_node function is the only
 # function called differently between providers
 if provider_to_use==Provider.EC2:
-	node = driver.create_node(name='test-node1', image=driver.get_image('cloud-mixer-image-2', provider=Provider.EC2), size=driver.get_size('t2.micro', provider=Provider.EC2), provider=Provider.EC2)
+	node = driver.create_node(name='test-node1', image=driver.get_image('ami-0fc20dd1da406780b', provider=Provider.EC2), size=driver.get_size('t2.micro', provider=Provider.EC2), provider=Provider.EC2)
 elif provider_to_use==Provider.GCE:
-	node = driver.create_node(name='test-node1', image=driver.get_image('cloud-mixer-image-2', provider=Provider.GCE), size=driver.get_size('n1-standard-1', provider=Provider.GCE), provider=Provider.GCE)
+	node = driver.create_node(name='test-node1', image=driver.get_image('debian-9-stretch-v20200309', provider=Provider.GCE), size=driver.get_size('n1-standard-1', provider=Provider.GCE), provider=Provider.GCE)
 # Using try/except/finally ensures the node is destroyed when we are done
 try:
 	print("waiting for node to be ready")
 	node = driver.wait_until_running(node)[0][0]
-	print("running sleep job")
-	current_date = driver.run_job(node, "sleep 100 && echo complete")
-	print("current jobs on node")
-	print(repr(driver.jobs[node]))
+	print("running job to find current date")
+	current_date = driver.run_job(node, "date")
 	current_date.join()
-	print("current jobs on node")
-	print(repr(driver.jobs[node]))
+	print("job complete:")
+	print(current_date)
 except Exception as e:
 	print(traceback.format_exc())
 finally:
 	print("destroying node")
-	driver.destroy_node(node)
+	node.destroy()
 	print("node destroyed")
