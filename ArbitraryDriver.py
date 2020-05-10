@@ -4,7 +4,7 @@ from libcloud.compute.base import NodeDriver
 from libcloud.compute.base import Node
 from libcloud.compute.base import KeyPair
 from libcloud.compute.base import NodeAuthPassword
-#from recommender import Recommender
+from recommendAgent.recommender import Recommender
 import subprocess
 import traceback
 import json
@@ -12,11 +12,13 @@ import time
 import threading
 import paramiko
 
+
 # This class allows the user to acquire and use instances from
 # arbitrary providers without worrying about the provider-specific
 # functions and data
 class ArbitraryDriver(NodeDriver):
-	
+
+	cloudMixerImageId = 'cloud-mixer-image-2'
 	providers = [
 		Provider.EC2,
 		Provider.GCE
@@ -25,13 +27,14 @@ class ArbitraryDriver(NodeDriver):
 	providerKeys = {}
 	sshKey = {}
 	jobs = {} #this dict will contain job pids for each node name
+	avail_sizes = []
 	
 	# The constructor accepts a keyfile path or a python dictionary of provider keys
 	# See the keys/template_keys.json file for the format
 	# After construction, the driver will be able to interface with any
 	# provider listed in self.providers that it was given keys for
-	def __init__(self, keys, provider=None):
-		#self.recommender = Recommender(10)
+	def __init__(self, keys, provider=None, sizes=None):
+		self.recommender = Recommender()
 		if provider is not None:
 			print("Warning: setting up an ArbitraryDriver for a specific provider will make it unable to use other providers")
 		if type(keys) is str:
@@ -55,6 +58,8 @@ class ArbitraryDriver(NodeDriver):
 			for p in self.providers:
 				if p.name in self.providerKeys:
 					self.providerDrivers[p] = self.setup_driver(p)
+		if sizes is None:
+			self.avail_sizes = self.list_sizes(provider)
 	
 	def setup_driver(self, provider):
 		cls = get_driver(provider)
@@ -129,22 +134,29 @@ class ArbitraryDriver(NodeDriver):
 			name = filePath[filePath.rfind("/")+1:-4]
 		self.sshKey[name] = filePath
 		
-	def create_managed_node(self, name, provider=None, slos={}):
-		if provider is None:
-			size = None
-			#size = self.recommender.recommend(self.list_sizes())
+	def create_managed_node(self, name, provider=None, size=None, image=None):
+		if size is None:
+			size_id = self.recommender.recommend(self.avail_sizes)
+			for s in self.avail_sizes:
+				if s.name == size_id:
+					size = s
 			sizeDriver = size.driver
-			for p in self.providerDrivers.keys():
-				if self.providerDrivers[p] == sizeDriver:
-					provider = p
-		node = self.create_node(name, cloudMixerImage, size, provider=provider)
-		periodic = threading.Timer(60, self.check_and_migrate, kwargs={node: node, slos: slos})
+			if provider is None:
+				for p in self.providerDrivers.keys():
+					if self.providerDrivers[p] == sizeDriver:
+						provider = p
+		if image is None:
+			image = self.get_image(self.cloudMixerImageId, provider)
+		print("selected size: "+size.name)
+		node = self.create_node(name, image, size, provider=provider)
+		periodic = threading.Timer(60, self.check_and_migrate, kwargs={node: node})
 		return node
 
-	def check_and_migrate(self, node, slos):
+	def check_and_migrate(self, node):
+		print("checking for better instance")
 		provider = None
 		size = None
-		#size = self.recommender.recommend(self.list_sizes())
+		size = self.recommender.recommend(self.avail_sizes)
 		if size is not None and size.name != node.size.name:
 			sizeDriver = size.driver
 			for p in self.providerDrivers.keys():
@@ -192,18 +204,16 @@ class ArbitraryDriver(NodeDriver):
 				driver_node_associations[n.driver] = [n]
 		for driver in driver_node_associations:
 			nodes_with_ips.extend(driver.wait_until_running(driver_node_associations[driver]))
-			if type(driver) == get_driver(Provider.GCE):
-				for n in driver_node_associations[driver]:
-					self.wait_for_GCE_node(n)
 		return nodes_with_ips
 
-	### ! Google Compute Engine requires significant start-up time after successfully returning from driver.wait_until_running before ssh attempts will succeed. This method waits for that to happen.
-	def wait_for_GCE_node(self, node):
+	# Waits for an ssh connection to be successfully established, or a timeout to be reached
+	# This is especially needed for Google Compute Engine because it requires significant start-up time after successfully returning from driver.wait_until_running before ssh attempts will succeed
+	def wait_for_ssh(self, node):
+		node = self.wait_until_running(node)[0][0]
 		print("Establishing ssh connection (will take a minute)")
 		start = time.time()
 		now = start
 		success = False
-		googleSshKey = list(self.sshKey.keys())[0]
 		key = paramiko.rsakey.RSAKey.from_private_key_file(list(self.sshKey.values())[0])
 		attempt = 1
 		while now - start < 100 and not success:

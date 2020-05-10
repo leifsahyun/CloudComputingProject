@@ -123,7 +123,7 @@ class Recommender(object):
         #dict of instances(dict)
         #scores = {key:self.eval(instance) for key, instance  in instances}
         #lit of instances(dict)
-        scores = {instance['instance_id']:self.eval(instance) for instance  in instances}
+        scores = {instance.name:self.eval(instance) for instance  in instances}
 
         best=min(scores, key=scores.get)
         #dict of instances(dict)

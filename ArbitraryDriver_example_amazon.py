@@ -40,7 +40,7 @@ node = driver.create_node(name='test-node', image=selectedImage, size=selectedSi
 try:
 	print("waiting for node to be ready")
 	print(node)
-	driver.wait_until_running([node])
+	node = driver.wait_for_ssh(node)
 	print(node)
 
 except Exception as e:

@@ -18,7 +18,7 @@ elif provider_to_use==Provider.GCE:
 # Using try/except/finally ensures the node is destroyed when we are done
 try:
 	print("waiting for node to be ready")
-	node = driver.wait_until_running(node)[0][0]
+	node = driver.wait_for_ssh(node)
 	print("running job to find current date")
 	current_date = driver.run_job(node, "date")
 	current_date.join()
