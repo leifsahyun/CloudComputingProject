@@ -14,7 +14,7 @@
 		"key": "The application id of an application service principal created through the Azure web interface",
 		"secret": "The generated password for the service principal above",
 		"resource_group": "The name of a resource group created through the Azure web interface and associated with the storage account and virtual network below",
-		"virtual_network": "The name of a virtual network created through the Azure web interface"
+		"virtual_network": "The name of a virtual network created through the Azure web interface",
 		"storage_account": "The name of a storage account created through the Azure web interface",
 		"storage_container": "The name of a container created through the Azure web interface inside the storage account above"
 	}

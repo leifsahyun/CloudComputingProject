@@ -7,28 +7,38 @@ keys = None
 
 try:
 	keyFile = open("keys/keys.json")
-	stringRep = keyFile.read()
-	keys = json.loads(stringRep)
+	keys = json.load(keyFile)
 except:
 	print("could not find or could not read keys/keys.json file")
 	exit()
+
+#if google
+try:
+	g_key_file = open('keys/cloudmixer-b3c9c0df4051.json')
+	keys['GCE'].update(json.load(g_key_file))
+except:
+	print("Error raeding the GCE keyfiile")
 
 IMAGE_NAME = 'debian-9-stretch-v20200309'
 SIZE_NAME = 'n1-standard-1'
 
 print("started script")
-
 cls = get_driver(Provider.GCE)
 #the key and id in the keyfile are for a service account that must be created through the GCE website
 #the id is the service account email address, the key is the path to the json keyfile provided by GCE
-driver = cls(keys["GCE"]["id"], keys["GCE"]["key"], project='airy-strength-272318')
+driver = cls(keys["GCE"]["id"], keys["GCE"]["key"], project=keys['GCE']['project_id'], region='us-east-2')
 
 print("got driver")
 
 sizes = driver.list_sizes()
-print("got sizes")
+print("got sizes:")
+for sz in sizes:
+	print(vars(sz)["extra"])
+
+print(list(vars(sizes[0]).keys()))
 images = driver.list_images()
 print("got images")
+
 
 selectedSize = [s for s in sizes if s.name == SIZE_NAME][0]
 selectedImage = [i for i in images if i.name == IMAGE_NAME][0]

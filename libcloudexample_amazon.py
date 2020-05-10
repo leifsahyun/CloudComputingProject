@@ -18,16 +18,19 @@ SIZE_ID = 't2.micro'
 
 print("started script")
 
-cls = get_driver(Provider.EC2)
-driver = cls(keys["EC2"]["id"], keys["EC2"]["key"], region='us-east-2')
+drv_cls = get_driver(Provider.EC2)
+driver = drv_cls(keys["EC2"]["id"], keys["EC2"]["key"], region='us-east-2')
+
 
 print("got driver")
 
 sizes = driver.list_sizes()
-print("got sizes")
-images = driver.list_images()
-print("got images")
+print("got sizes:")
+#print(sizes)
+print(list(vars(sizes[0]).keys()))
+print(vars(sizes[0]))
 
+images = driver.list_images()
 selectedSize = [s for s in sizes if s.id == SIZE_ID][0]
 selectedImage = [i for i in images if i.id == IMAGE_ID][0]
 
