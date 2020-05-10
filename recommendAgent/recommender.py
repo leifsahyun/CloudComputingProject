@@ -103,13 +103,13 @@ class Recommender(object):
         # for name, metric in self.metrics:
         #    sum+=metric.eval(instance[name])
         #IF list:
-        return sum(map(lambda m:m.eval(instance[m.name]),self.metrics))
+        return sum(map(lambda m:m.eval(vars(instance)[m.name]),self.metrics))
         #func is a reduce(lambda x,y: ..., list)
         # OR func(list)
 
     # Evaluate if given
     def eval_bool(self,instance):
-        return all(map(lambda m:m.eval_bool(instance[m.name]),self.metrics))
+        return all(map(lambda m:m.eval_bool(vars(instance)[m.name]),self.metrics))
 
 
     def set_reward_func(self,fun):
@@ -124,7 +124,7 @@ class Recommender(object):
         #dict of instances(dict)
         #scores = {key:self.eval(instance) for key, instance  in instances}
         #lit of instances(dict)
-        scores = {instance['instance_id']:self.eval(instance) for instance  in instances}
+        scores = {instance.name:self.eval(instance) for instance  in instances}
 
         best=min(scores, key=scores.get)
         #dict of instances(dict)
