@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     parsed_dict = run_benchmarks(provider, benchmarks, machine_type)
     if parsed_dict is None:
-        "Benchmarks failed. Exiting..."
+        print("Benchmarks failed. Exiting...")
         sys.exit(-1)
 
     if "coremark" in benchmarks:
