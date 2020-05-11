@@ -31,8 +31,9 @@ except:
 
 print("Acquiring instance information")
 g_cls = get_driver(Provider.GCE)
-g_driver = g_cls(keys["GCE"]["id"], keys["GCE"]["key"], project=keys['GCE']['project_id'])
+g_driver = g_cls(keys["GCE"]["id"], keys["GCE"]["key"], project=keys['GCE']['project_id'],region='us-east1-b')
 g_sizes = g_driver.list_sizes()
+#GCE sizes seem to have duplicate entries
 
 # print("GCE  instance fields:")
 # print(list(vars(g_sizes[0]).keys()))
@@ -48,7 +49,7 @@ aws_sizes = aws_driver.list_sizes()
 # print(vars(aws_sizes[0]))
 
 #size_hdrs=list(vars(aws_sizes[0]).keys())
-size_hdrs=['id','name','type','size', 'ram', 'cpu','disk','gpu', 'bandwidth', 'price']
+size_hdrs=['id','name','type','size', 'ram', 'cpu','disk','gpu', 'bandwidth', 'price','provider']
 #could use UUID with get_uuid on sizes
 print('writing files')
 
@@ -107,7 +108,7 @@ try:
 	with open(csv_file, 'w') as csvfile:
 		writer = csv.DictWriter(csvfile, fieldnames=size_hdrs, extrasaction='ignore')
 		writer.writeheader()
-		c=1000
+		c=0
 		for sz in aws_sizes:
 			size_row=vars(sz)
 			
