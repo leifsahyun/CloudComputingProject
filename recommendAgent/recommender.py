@@ -24,6 +24,8 @@ from recommendAgent.metrics import Metric
 
 API_Key = "c3d4e51234sa5"
 
+CHANGE_COST = 0 
+
 DEF_HOST_NAME = "localhost"
 DEF_PORT_NUMBER = 8080
 

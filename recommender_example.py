@@ -43,3 +43,5 @@ print(rec.eval_bool(inst_m1))
 rec.candidates=instances.keys()
 rec.instance_data=instances
 print(rec.recommend())
+
+print("Live Test")

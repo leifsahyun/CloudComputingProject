@@ -79,7 +79,7 @@ class MetricsServer(BaseHTTPRequestHandler):
                 if  post_data.get('request') == 'metrics':
                     for instkey in post_data["instances"]: 
                         #metricdata[instkey]=dummy_metrics  # 
-                        metricdata[instkey] = self.dbc.get_last(instkey)
+                        metricdata[instkey] = self.dbc.pull_last(instkey)
                     
                    
                 elif  post_data.get('request') == 'alternatives':
