@@ -100,17 +100,17 @@ class Recommender(object):
 
         # case insensitivity for header keys is needed
         if resp_hdr["Content-Type"] == "application/json":
-            if self.candidates == resp_data.keys() :
-               self.instance_data.update.get('instances')
+            if self.candidates == resp_data.keys():
+               self.instance_data.update(resp_data.get('instances'))
 
-    def request_alternatives(self, inst_size):   
-        resp_hdr,resp_data=self.request("alternatives",{"intances":self.candidates})
+    def request_alternatives(self, inst_size):  
+        resp_hdr,resp_data=self.request("alternatives",{"instance":inst_size})
         if resp_hdr["Content-Type"] == "application/json":
             self.set_candidates(resp_data.get('instance_names'))
 
     #find matching instances from specs
     def request_candidates(self,dict_params):    
-        resp_hdr,resp_data=self.request("candidates",{"intances":self.candidates})
+        resp_hdr,resp_data=self.request("candidates",{"params":dict_params})
         if resp_hdr["Content-Type"] == "application/json":
             self.set_candidates(resp_data.get('instance_names'))
 

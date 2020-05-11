@@ -11,7 +11,12 @@ curs = None
 #TODO:  list of default adresses to fall back to
 
 
-#Coudln't refrain from wrapping it in a class
+BYTE_FACTOR = 1024
+#yep a MACRO DICT
+FACTOR={'cpu':1,'ram':1024,'disk':100}
+#for value test
+MAX=str(1.15)
+MIN=str(0.86)
 
 DEF_USR = 'perfkit'
 DEF_HOST = '127.0.0.1'
@@ -64,7 +69,7 @@ class DBClient(object):
                 else:
                     pass
             try:
-            
+                p='0202duolc'
                 dbx = connector.connect(user=usr, password=p,
                                 host=h,database=db,
                                 auth_plugin='mysql_native_password')
@@ -102,6 +107,7 @@ class DBClient(object):
                "(inst_id, resp, latency, tail_lat) " #do +[field for field in <names_list>] + ?
                "VALUES (    %(inst_id)s, %(resp)s, %(latency)s, %(tail_lat)s)")
 
+        # encapsulate this
         try:
             self.curs.execute(add_cmd, entry)
        
@@ -142,30 +148,44 @@ class DBClient(object):
         #OBSOLOTE
         # if isinstance(identifier, int): 
         #     id_cat='id'
-        if isinstance(identifier, str):
-            identifier=self.get_inst_id(identifier)
-        elif isinstance(identifier, int):
-            pass
-        else:
-            print("Identifier not recognized")
-            return
+        identifier=self.__identifier(identifier)
         sel_cmd = ("SELECT * FROM " + BENCH_TABLE + " WHERE t_entry=(SELECT MAX(t_entry) FROM "+ BENCH_TABLE + ") AND inst_id=%s;"  )
-        price_cmd = ("SELECT `price` FROM " + INST_TABLE + "  WHERE inst_id=%s;"  )
+        price_cmd = ("SELECT `price` FROM " + INST_TABLE + "  WHERE id=%s;"  )
 
         #dict_curs
         self.dict_curs.execute(sel_cmd,(identifier,))
         res=self.dict_curs.fetchall()
+        
         if not res:
             print("No entry for the requested instance")
-        else:
-            return res[:n] #n is a place holder for now and must be kept as 1
-        return
+            return
+
+        #this is easier but we can also get prices once when we ask for candadtes
+        #seperately get price
+
+        self.dict_curs.execute(price_cmd,(identifier,))
+        full_res=list(map(dict.update,zip(res,self.dict_curs.fetchall())))
+
+        return full_res[:n] #n is a place holder for now and must be kept as 1. fetchall returns a list of dict entries, enabling us to collect data for running awg
+
+    def get_alternatives(self,instance,stats=['cpu','ram']): #stats option provides the "get instances withx,y matching 'instance'" ability
+        return self.get_candidates(self.get_inst_stats(self.__identifier(instance),stats))
 
     def get_candidates(self,stat_dict):
-        pass
+        
+        #'WHERE a DIV 2 BETWEEN 10 AND 11' AND 'b DIV 4 BETWEEN 10 AND 11' ...]
+        candidate_cmd=("SELECT `name` from " + INST_TABLE + 
+        " WHERE " + " AND ".join([ k + " DIV " + str(stat_dict[k]) + " BETWEEN " + MIN + " AND " + MAX for k in stat_dict.keys()])+";")
+        #unfortuntely python doesn't have list generation from ditc comprehension
+        #print(candidate_cmd)
+        self.curs.execute(candidate_cmd)
+        res=self.curs.fetchall()
+        return list(map(lambda x: x[0], res))
 
-    def get_inst_stats(self,name):
-        pass
+        #EXTRA:
+        #if empty
+        #    self.get_candidates({'ram':stat_dict['ram']})
+
 
     #### UTILITY
 
@@ -181,13 +201,31 @@ class DBClient(object):
         self.curs.execute("describe " + BENCH_TABLE + ";")
         benchs=self.curs.fetchall()
         print(tabulate(benchs, headers=DBClient.descriptors, tablefmt='psql'))
-    
+
+    # Internally we always use the instance id in the database. This method will deal with name, tag or id
+    def __identifier(self,idf):
+        if isinstance(idf, str):
+            return self.get_inst_id(idf)
+        elif isinstance(idf, int):
+            return idf
+        else:
+            print("Identifier not recognized")
+            return
+        
+    # get the requested stats for a given instance id
+    def get_inst_stats(self,id,stats=['cpu','ram','disk']):
+        
+        get_stats_cmd=("SELECT {} FROM ".format(",".join(stats)) + INST_TABLE +";")
+        self.dict_curs.execute(get_stats_cmd)
+        return self.dict_curs.fetchall()[0]
+         
+
     def get_inst_id(self, lbl):# select the correct id for tag
         
         id_cmd=("SELECT `id` FROM `" + INST_TABLE  + "` WHERE (`tag` = %s OR `name` = %s)")
         self.dict_curs.execute(id_cmd, (lbl,lbl))
-
-        return self.dict_curs.fetchall()[0]['id']
+        res=self.dict_curs.fetchall()
+        return (res[0]['id'] if res else "invalid instance" )
 
 
     def show_instances(self, full=False):

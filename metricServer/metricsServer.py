@@ -75,13 +75,20 @@ class MetricsServer(BaseHTTPRequestHandler):
 
             metricdata={} #class object?
             # FUTURE: prevent race condition for DB access
-            if post_data.has_key("instances"):
-                for instkey in post_data["instances"]: 
-                    #metricdata[instkey]=dummy_metrics  # 
-                    metricdata[instkey] = self.dbc.get_last(instkey)
-                
-                self.wfile.write(json.dumps(metricdata)) 
+            if post_data.has_key("request"):
+                if  post_data.get('request') == 'metrics':
+                    for instkey in post_data["instances"]: 
+                        #metricdata[instkey]=dummy_metrics  # 
+                        metricdata[instkey] = self.dbc.get_last(instkey)
+                    
+                   
+                elif  post_data.get('request') == 'alternatives':
+                    metricdata['instance_names'] = self.dbc.get_alternatives(post_data.get('instance'))
 
+                elif  post_data.get('request') == 'candidates':
+                    metricdata['instance_names'] = self.dbc.get_candidates(post_data.get('params'))
+
+                self.wfile.write(json.dumps(metricdata)) 
             # TODO: request might be for updating the instance list database
             # elif has_key(something else) 
 

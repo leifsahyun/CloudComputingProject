@@ -25,9 +25,13 @@ print("Test select last:")
 print(cli.pull_last("AWSc48xlge"))
 print(cli.pull_last(1))
 
+print(cli.get_alternatives('c4.8xlarge'))
+
+print(cli.get_candidates({'ram':16000,'cpu':8}))
+
 print("Connection established")
 
-
+exit()
 tests = [("GCP", "f1-micro"), ("AWS", "t2.micro")]
 
 i = 6  # will use for ids
