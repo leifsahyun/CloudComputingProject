@@ -1,37 +1,42 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python
 
-#is moving sys under __main__ a common practice?
+# is moving sys under __main__ a common practice?
+import json
+import cgi
 import sys
 import time
+
 if sys.version_info[0] < 3:
-    import BaseHTTPServer, cgi
+    from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 else:
-    print("web.py classes for python3 are not supported yet ")
-    #import http.server etc etc
-    exit()
+    from http.server import BaseHTTPRequestHandler, HTTPServer
 
-import json
-#import DBclient
+# import DBclient
 
-API_Key = "c3d4e51234sa5" #clearly not implemented yet
+API_Key = "c3d4e51234sa5"  # clearly not implemented yet
 
-DEF_HOST_NAME = "localhost" # !!!REMEMBER TO CHANGE THIS!!!
-DEF_PORT_NUMBER = 8080 # Maybe set this to 9000.
+DEF_HOST_NAME = "localhost"  # !!!REMEMBER TO CHANGE THIS!!!
+DEF_PORT_NUMBER = 8080  # Maybe set this to 9000.
 
-dummy_metrics={"provider":"AWS",
-            "type":"m1",
-            "tier":"micro",
-            "cpu":16,
-            "RAM":32,
+dummy_metrics = {"provider": "AWS",
+            "type": "m1",
+            "tier": "micro",
+            "cpu": 16,
+            "RAM": 32,
             "something": 75}
 
-class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
+
+class MetricsServer(BaseHTTPRequestHandler):
+
+    def __init__(self, request, client_address, server):
+        BaseHTTPRequestHandler.__init__(self,  request, client_address, server)
+        if sys.version_info[0] < 3:
+            self.headers.get = self.headers.getheader
 
     def do_HEAD(self):
         self.send_response(100)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
-    
     
     def do_GET(self):
         """Respond to a GET request."""
@@ -46,10 +51,11 @@ class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
         
         # Begin the response
         # this is where we use get_latest
-        clength = int(hdr.getheader('content-length'))
-        ctype, pdict = cgi.parse_header(hdr.getheader("content-type"))
+        clength = int(hdr.get('content-length'))
+        print(clength)
+        ctype, pdict = cgi.parse_header(hdr.get("content-type"))
         
-        if ctype != "application/json":
+        if ctype == "application/json" and clength:
 
             post_data = json.loads(self.rfile.read(clength)) # <--- Gets the data itself
             
@@ -57,7 +63,7 @@ class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-        #### Body here
+        # Body here
 
             # Note: writing the json dump each iteration might be more efficient, but looks less clean
             # so that's  something to consider later
@@ -68,7 +74,7 @@ class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
             #   ...
 
             metricdata={} #class object?
-            #FUTURE: prevent race condition for DB access
+            # FUTURE: prevent race condition for DB access
             if post_data.has_key("instances"):
                 for instkey in post_data["instances"]: 
                     #metricdata[instkey]=dummy_metrics  # 
@@ -76,8 +82,8 @@ class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
                 
                 self.wfile.write(json.dumps(metricdata)) 
 
-            #TODO: request might be for updating the instance list database
-            #elif has_key(something else) 
+            # TODO: request might be for updating the instance list database
+            # elif has_key(something else) 
 
             # couldn't find the key we are looking for
             else:
@@ -99,16 +105,16 @@ class MetricsServer(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 def main():
-    #TODO: parameterize
+    # TODO: parameterize
     HOST_NAME = DEF_HOST_NAME
     PORT_NUMBER = DEF_PORT_NUMBER
-    server_class = BaseHTTPServer.HTTPServer #nice touch they did in the examples
+    server_class = HTTPServer #nice touch they did in the examples
 
     metricd = server_class((HOST_NAME, PORT_NUMBER), MetricsServer)
     print(time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER))
 
     try:
-        ### MAIN LOOP will make it a step
+        # MAIN LOOP will make it a step
         metricd.serve_forever()
         ###
 
@@ -120,8 +126,8 @@ def main():
 
 
     # print command line arguments
-    #client = DBClient(args[1:])
-    #TODO: if len(argv)==1 read server.cfg, if 2 with cfg use specified file,  file or revert then def
+    # client = DBClient(args[1:])
+    # TODO: if len(argv)==1 read server.cfg, if 2 with cfg use specified file,  file or revert then def
 
     # For now, backup and wipe database in Bash 
     # Perfkit calls add_entry
