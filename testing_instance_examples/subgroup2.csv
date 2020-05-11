@@ -1,0 +1,7 @@
+id,name,type,size,ram,cpu,disk,gpu,bandwidth,price,provider
+4032,n1-highcpu-32,n1,highcpu32,29491,32,0,0,0,1.216,GCE
+5032,n1-highmem-32,n1,highmem32,212992,32,0,0,0,2.016,GCE
+23,c5d.4xlarge,c5d,4xlarge,32768,16,400,0,10,0.768,AWS
+24,c5d.9xlarge,c5d,9xlarge,73728,36,900,0,10,1.728,AWS
+7,c4.4xlarge,c4,4xlarge,30720,16,0,0,0,0.796,AWS
+8,c4.8xlarge,c4,8xlarge,61440,36,0,0,10,1.591,AWS
