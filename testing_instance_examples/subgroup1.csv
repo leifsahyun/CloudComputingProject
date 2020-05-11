@@ -1,7 +1,7 @@
 id,name,type,size,ram,cpu,disk,gpu,bandwidth,price,provider
 25,c5d.large,c5d,large,4096,2,50,0,10,0.096,AWS
 26,c5d.xlarge,c5d,xlarge,8192,4,100,0,10,0.192,AWS
-36,d2.xlarge,d2,xlarge,31232,4,6000,0,,0.69,AWS
+36,d2.xlarge,d2,xlarge,31232,4,6000,0,0,0.69,AWS
 50,h1.8xlarge,h1,8xlarge,131072,32,8000,0,10,1.872,AWS
 4004,n1-highcpu-4,n1,highcpu4,3686,4,10,0,0,0.152,GCE
 4008,n1-highcpu-8,n1,highcpu8,7373,8,10,0,0,0.304,GCE
