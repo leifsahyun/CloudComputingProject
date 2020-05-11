@@ -8,7 +8,7 @@ inst_a1={
     'name':'a1.large',
     'latency':70,
     'tail-latency':200,
-    'capacity':5,
+    'cpu_perf':5,
     'availability':99,
     }
 
@@ -17,7 +17,7 @@ inst_e2={
     'name':'e2-highcpu',
     'latency':90,
     'tail-latency':200,
-    'capacity':5,
+    'cpu_perf':5,
     'availability':99,
     }
 
@@ -26,11 +26,11 @@ inst_m1={
     'name':'m1.large',
     'latency':70,
     'tail-latency':200,
-    'capacity':5,
+    'cpu_perf':5,
     'availability':99,
     }
 
-instances = [inst_a1,inst_e2,inst_m1]
+instances = {'a1.large':inst_a1,'e2-highcpu':inst_e2,'m1.large':inst_m1}
 
 rec = Recommender()
 
@@ -40,5 +40,6 @@ print(rec.metrics)
 
 print(rec.eval(inst_m1))
 print(rec.eval_bool(inst_m1))
-
-print(rec.recommend(instances))
+rec.candidates=instances.keys()
+rec.instance_data=instances
+print(rec.recommend())

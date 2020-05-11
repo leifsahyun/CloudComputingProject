@@ -17,7 +17,8 @@ DEF_USR = 'perfkit'
 DEF_HOST = '127.0.0.1'
 DEF_DB = 'metricsDB'
 
-
+BENCH_TABLE="benchmark"
+INST_TABLE="sizes_lite"
 class DBClient(object):
 
     inst_headers=['id' , 'tag', 'provider', 'type', 'tier', 'cpu', 'gpu', 'memory']
@@ -66,7 +67,7 @@ class DBClient(object):
             
                 dbx = connector.connect(user=usr, password=p,
                                 host=h,database=db,
-                                auth_plugin="mysql_native_password")
+                                auth_plugin='mysql_native_password')
                 #cursor.execute("SELECT * FORM employees")   # Syntax error in query
             
             except connector.Error as err:
@@ -91,13 +92,13 @@ class DBClient(object):
     # entry should have 
 
     # example: aDBCleint.add_entry(Perfkit.do_bench_stuff())
-    def add_entry(self, entry):
+    
         
         #CONSIDER: having tables for each instance type
         #entry_data = {}
+    def add_entry(self, entry):
         
-        
-        add_cmd = ("INSERT INTO benchmark "
+        add_cmd = ("INSERT INTO " + BENCH_TABLE +
                "(inst_id, resp, latency, tail_lat) " #do +[field for field in <names_list>] + ?
                "VALUES (    %(inst_id)s, %(resp)s, %(latency)s, %(tail_lat)s)")
 
@@ -116,7 +117,7 @@ class DBClient(object):
         
         #CONSIDER: having tables for each instance type
        
-        add_inst_cmd = ("INSERT INTO instances"
+        add_inst_cmd = ("INSERT INTO " + INST_TABLE +
                "(provider, type, tier, cpu, gpu, memory) "
                "VALUES (    %(provider)s, %(type)s, %(tier)s, %(cpu)s, %(gpu)s, %(memory)s)")
         #autogenerate id, or have DB assign it and print
@@ -145,11 +146,12 @@ class DBClient(object):
             identifier=self.get_inst_id(identifier)
         elif isinstance(identifier, int):
             pass
-        #TODO: accept (field=value)s to select the correct inst id with given specs
         else:
             print("Identifier not recognized")
             return
-        sel_cmd = ("SELECT * FROM benchmark WHERE t_entry=(SELECT MAX(t_entry) FROM benchmark) AND inst_id=%s;"  )
+        sel_cmd = ("SELECT * FROM " + BENCH_TABLE + " WHERE t_entry=(SELECT MAX(t_entry) FROM "+ BENCH_TABLE + ") AND inst_id=%s;"  )
+        price_cmd = ("SELECT `price` FROM " + INST_TABLE + "  WHERE inst_id=%s;"  )
+
         #dict_curs
         self.dict_curs.execute(sel_cmd,(identifier,))
         res=self.dict_curs.fetchall()
@@ -159,26 +161,31 @@ class DBClient(object):
             return res[:n] #n is a place holder for now and must be kept as 1
         return
 
+    def get_candidates(self,stat_dict):
+        pass
+
+    def get_inst_stats(self,name):
+        pass
 
     #### UTILITY
 
     def help(self):
         #execute
-        self.curs.execute("describe instances;")
+        self.curs.execute("describe " + INST_TABLE + ";")
         #fetch
         insts=self.curs.fetchall()
         #tabulate
         print(tabulate(insts, headers=DBClient.descriptors, tablefmt='psql'))
 
 
-        self.curs.execute("describe benchmark;")
+        self.curs.execute("describe " + BENCH_TABLE + ";")
         benchs=self.curs.fetchall()
         print(tabulate(benchs, headers=DBClient.descriptors, tablefmt='psql'))
     
     def get_inst_id(self, lbl):# select the correct id for tag
         
-        id_cmd=("""SELECT `id` FROM `instances` WHERE `tag` = %s""")
-        self.dict_curs.execute(id_cmd, (lbl,))
+        id_cmd=("SELECT `id` FROM `" + INST_TABLE  + "` WHERE (`tag` = %s OR `name` = %s)")
+        self.dict_curs.execute(id_cmd, (lbl,lbl))
 
         return self.dict_curs.fetchall()[0]['id']
 
@@ -195,7 +202,7 @@ class DBClient(object):
             hdr_list = DBClient.inst_headers[:2] #tip: [:None] returns the full list
             hdr_str = ",".join(hdr_list)
 
-        self.curs.execute("select %s from instances;"%hdr_str)
+        self.curs.execute("select %s from "%hdr_str + INST_TABLE  + ";")
         cols_info=self.curs.fetchall()
         print(tabulate(cols_info, headers=hdr_list, tablefmt='psql'))
 

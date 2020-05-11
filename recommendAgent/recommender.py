@@ -75,7 +75,7 @@ class Recommender(object):
 
     ### HTTP Client ###
     def init_metrics_client(self):
-        self.url=DEF_HOST_NAME + ":" + DEF_PORT_NUMBER
+        self.url=DEF_HOST_NAME + ":" + str(DEF_PORT_NUMBER)
         self.headers={"Accept": "application/json",
                 "Content-Type": "application/json"}
 
@@ -102,7 +102,7 @@ class Recommender(object):
         if resp_hdr["Content-Type"] == "application/json":
             if self.candidates == resp_data.keys() :
                self.instance_data.update.get('instances')
-               
+
     def request_alternatives(self, inst_size):   
         resp_hdr,resp_data=self.request("alternatives",{"intances":self.candidates})
         if resp_hdr["Content-Type"] == "application/json":
@@ -114,9 +114,14 @@ class Recommender(object):
         if resp_hdr["Content-Type"] == "application/json":
             self.set_candidates(resp_data.get('instance_names'))
 
+      
+    @staticmethod
+    def __sec2int(sec):
+        return timedelta(seconds=sec)
+
 
     ### Threading ###
-     def start(self,sel=0):
+    def start(self,sel=0):
         if not sel==2: self.jobs[0].start()
         if not sel==1: self.jobs[1].start()
 
@@ -184,12 +189,12 @@ class Recommender(object):
         #make this more analytic, with non-certain scores and close alternatives
 
     def self_check(self):
-        self.need_eval=eval_bool(current)
+        self.need_eval=self.eval_bool(self.current)
         return self.need_eval
 
-    def __del__(self): 
+    def close(self): 
         print("Terminating Recommender...")
-        if self.stop()
+        self.stop()
 
     
 
