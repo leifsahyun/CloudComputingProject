@@ -160,23 +160,28 @@ class ArbitraryDriver(NodeDriver):
 						provider = p
 		if image is None:
 			image = self.get_image(self.cloudMixerImageId, provider)
-		print("selected size: "+size.name)
+		print("instance of size: "+size.name+" created at "+str(time.time()))
 		node = self.create_node(name, image, size, provider=provider)
-		periodic = threading.Timer(60, self.check_and_migrate, kwargs={node: node})
 		return node
 
 	def check_and_migrate(self, node):
-		print("checking for better instance")
+		print("checking for better instance at time "+str(time.time()))
 		provider = None
 		size = None
 		size_id = self.recommender.recommend(self.avail_sizes)
 		if size_id is not None and size_id != node.size.name:
+			for s in self.avail_sizes:
+				if size_id == s.name:
+					size = s
 			sizeDriver = size.driver
 			for p in self.providerDrivers.keys():
 				if self.providerDrivers[p] == sizeDriver:
 					provider = p
 			return self.migrate_node(node, provider, size)
 		else:
+			periodic = threading.Timer(10, self.check_and_migrate, kwargs={'node': node})
+			periodic.daemon = True
+			periodic.start()
 			return node
 		
 	
@@ -272,6 +277,7 @@ class ArbitraryDriver(NodeDriver):
 	def migrate_node(self, node, dest_provider, dest_size, name=None):
 		if name is None:
 			name = node.name+'-copy'
+		node = self.wait_for_ssh(node)
 		client = paramiko.client.SSHClient()
 		client.set_missing_host_key_policy(paramiko.client.WarningPolicy)
 		client.load_system_host_keys()
@@ -307,7 +313,7 @@ class ArbitraryDriver(NodeDriver):
 		print("synced persistent data and process images")
 		client.close()
 		self.destroy_node(node)
-		print("original node destroyed")
+		print("original node destroyed at time "+str(time.time()))
 		try:
 			print("restarting processes")
 			global_thread_stop_event.clear()
@@ -323,7 +329,8 @@ class ArbitraryDriver(NodeDriver):
 				self.jobs[newNode.name].append(restore)
 			else:
 				self.jobs[newNode.name] = [restore]
-			print("restored job at time "+str(time.time()))
+			print("restored jobs at time "+str(time.time()))
+			self.check_and_migrate(newNode)
 		except Exception as e:
 			print(traceback.format_exc())
 		finally:
