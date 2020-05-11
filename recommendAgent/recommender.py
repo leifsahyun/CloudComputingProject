@@ -100,12 +100,12 @@ class Recommender(Timeloop):
     def request_metrics(self):
         
         #TODO: filter already-up-to-date instances
-        resp_hdr,resp_data=self.request("metrics",{"intances":self.candidates})
+        resp_hdr,resp_data=self.request("metrics",{"instances":self.candidates})
 
         # case insensitivity for header keys is needed
         if resp_hdr["Content-Type"] == "application/json":
             if self.candidates == resp_data.keys():
-               self.instance_data.update(resp_data.get('instances'))
+               self.instance_data.update(resp_data.get('instances') or {})
 
     def request_alternatives(self, inst_size):  
         resp_hdr,resp_data=self.request("alternatives",{"instance":inst_size})

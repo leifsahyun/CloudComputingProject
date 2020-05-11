@@ -23,7 +23,7 @@ DEF_HOST = '127.0.0.1'
 DEF_DB = 'metricsDB'
 
 BENCH_TABLE="benchmark"
-INST_TABLE="sizes_lite"
+INST_TABLE="sizes_full"
 class DBClient(object):
 
     inst_headers=['id' , 'tag', 'provider', 'type', 'tier', 'cpu', 'gpu', 'memory']
@@ -147,25 +147,30 @@ class DBClient(object):
     def pull_last(self, identifier,n=1):
         #accept both id or str
         #OBSOLOTE
+        record=identifier
         # if isinstance(identifier, int): 
         #     id_cat='id'
         identifier=self.__identifier(identifier)
         sel_cmd = ("SELECT * FROM " + BENCH_TABLE + " WHERE t_entry=(SELECT MAX(t_entry) FROM "+ BENCH_TABLE + ") AND inst_id=%s;"  )
         price_cmd = ("SELECT `price` FROM " + INST_TABLE + "  WHERE id=%s;"  )
-
+        print(sel_cmd)
+        print(price_cmd)
         #dict_curs
         self.dict_curs.execute(sel_cmd,(identifier,))
         res=self.dict_curs.fetchall()
         
         if not res:
-            print("No entry for the requested instance")
+            print("No entry for the requested instance "+ str(identifier))
             return
 
         #this is easier but we can also get prices once when we ask for candadtes
         #seperately get price
 
         self.dict_curs.execute(price_cmd,(identifier,))
-        full_res=list(map(dict.update,zip(res,self.dict_curs.fetchall())))
+        prices=self.dict_curs.fetchall()
+ 
+        full_res=list(map(lambda dict_tup: dict_tup[0].update(dict_tup[1]) ,zip(res,prices)))
+        # or result = {x['id']:x for x in lst1 + lst2}.values()
 
         return full_res[:n] #n is a place holder for now and must be kept as 1. fetchall returns a list of dict entries, enabling us to collect data for running awg
 
