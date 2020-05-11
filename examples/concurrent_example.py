@@ -67,8 +67,8 @@ class AsyncAgent(Timeloop):
         Timeloop.__init__(self)
         self.jobs=[None, None] #Timeloop.jobs is a list
         self.c=0
-        self.set_main_job(self.fun1, 2)
-        self.set_selfcheck_job(self.fun2, 3, 'werld')
+        self.set_main_job(self.fun1, t1)
+        self.set_selfcheck_job(self.fun2, t2, 'werld')
         if init_val:
             #do routine
             self.fun2(init_val)
