@@ -13,6 +13,7 @@ import time
 import threading
 import paramiko
 
+global_thread_stop_event = threading.Event()
 
 # This class allows the user to acquire and use instances from
 # arbitrary providers without worrying about the provider-specific
@@ -29,6 +30,7 @@ class ArbitraryDriver(NodeDriver):
 	sshKey = {}
 	jobs = {} #this dict will contain job pids for each node name
 	avail_sizes = []
+
 	
 	# The constructor accepts a keyfile path or a python dictionary of provider keys
 	# See the keys/template_keys.json file for the format
@@ -281,53 +283,47 @@ class ArbitraryDriver(NodeDriver):
 			self.jobs[node.name] = []
 		for job in suspended_jobs:
 			if job.status == JobStatus.RUNNING:
-				job.stop()
-				#job.cb_thread.join()
-				print(job.status)
+				print("attempting to stop job "+job.name)
+				#job.stop()
+				global_thread_stop_event.set()
+				print(global_thread_stop_event.is_set())
+				#print(job.cb_thread.is_alive())
+				job.cb_thread.join()
 				cmdin, cmdout, cmderr = client.exec_command('sudo criu dump --tree '+str(job.pid)+' -D /home/ubuntu/criu-chamber --shell-job')
 				exit_code = cmdout.channel.recv_exit_status()
 				if exit_code!=0:
 					print(cmderr.readlines())
 				if job.client:
 					job.client.close()
-				print("job '"+str(job.name)+"' suspended")
+				print("job '"+str(job.name)+"' suspended at time "+str(time.time()))
 		print("all jobs on node "+str(node.name)+" suspended")
 		newNode = self.create_managed_node(name=name, image=self.cloudMixerImageId, size=dest_size, provider=dest_provider)
 		print("new node "+str(newNode.name)+" created")
 		newNode = self.wait_for_ssh(newNode)
 		cmdin, cmdout, cmderr = client.exec_command('rsync -a -e "ssh -i .ssh/static_pair.pem -o StrictHostKeyChecking=no" --super /home/ubuntu ubuntu@'+str(newNode.public_ips[0])+':/home')
 		exit_code = cmdout.channel.recv_exit_status()
-		if exit_code!=0:
-			print(cmderr.readlines())
+		#if exit_code!=0:
+		#	print(cmderr.readlines())
 		print("synced persistent data and process images")
 		client.close()
 		self.destroy_node(node)
 		print("original node destroyed")
 		try:
 			print("restarting processes")
-			clientB = paramiko.client.SSHClient()
-			clientB.set_missing_host_key_policy(paramiko.client.WarningPolicy)
-			clientB.load_system_host_keys()
-			clientB.connect(newNode.public_ips[0], username='ubuntu', pkey=key)
-			cmdin, cmdout, cmderr = clientB.exec_command('sudo criu restore -D /home/ubuntu/criu-chamber --shell-job')
-			exit_code = cmdout.channel.recv_exit_status()
-			if exit_code!=0:
-				print(cmderr.readlines())
-			for job in suspended_jobs:
-				job.node = newNode
-				job.sshKey = key
-				job.setup_client(user='ubuntu')
-				job.stdout = job.client.exec_command('strace -p '+str(job.pid)+' -e write=1')[1]
-				job.stderr = job.client.exec_command('strace -p '+str(job.pid)+' -e write=2')[1]
-				job.status = JobStatus.RUNNING
-				job.stop_event.clear()
-				job.cb_thread = threading.Thread(target = job._wait_for_completion)
-				if newNode.name in self.jobs:
-					self.jobs[newNode.name].append(job)
-				else:
-					self.jobs[newNode.name] = [job]
-				print("restored job "+str(job.name))
-			print("processes restored")
+			global_thread_stop_event.clear()
+			restore = Job('sudo criu restore -D /home/ubuntu/criu-chamber --shell-job', newNode, key, name="restored processes")
+			restore.run()
+			#job.client.exec_command('strace -p '+str(job.pid)+' -e write=1')[1]
+			#job.client.exec_command('strace -p '+str(job.pid)+' -e write=2')[1]
+			if restore.stdout.channel.exit_status_ready():
+				exit_code = restore.stdout.channel.recv_exit_status()
+				if exit_code!=0:
+					print(restore.stderr.readlines())
+			if newNode.name in self.jobs:
+				self.jobs[newNode.name].append(restore)
+			else:
+				self.jobs[newNode.name] = [restore]
+			print("restored job at time "+str(time.time()))
 		except Exception as e:
 			print(traceback.format_exc())
 		finally:
@@ -379,16 +375,16 @@ class Job:
 		stdin, self.stdout, self.stderr = self.client.exec_command('echo $$ && exec '+self.command)
 		self.pid = int(self.stdout.readline())
 		self.cb_thread = threading.Thread(target = self._wait_for_completion)
-		self.cb_thread.start()
+		self.cb_thread.daemon = True
 		self.status = JobStatus.RUNNING
+		self.cb_thread.start()
 		return self.cb_thread
 
 	def stop(self):
 		if self.status != JobStatus.RUNNING:
 			print("job '"+self.name+"' is not running")
 			return
-		self.status = JobStatus.FINISHED
-		self.stop_event.set()
+		global_thread_stop_event.set()
 			
 
 	def wait_for_completion(self):
@@ -396,9 +392,9 @@ class Job:
 			pass
 	
 	def _wait_for_completion(self):
-		while not self.stdout.channel.exit_status_ready() and self.status==JobStatus.RUNNING and not self.stop_event.is_set():
+		while not global_thread_stop_event.is_set() and not self.stdout.channel.exit_status_ready():
 			pass
-		if not self.stop_event.is_set():
+		if not global_thread_stop_event.is_set():
 			exit_status = self.stdout.channel.recv_exit_status()
 			self.callback(self.stdout.readlines(), self.stderr.readlines(), exit_status)
 		self.status = JobStatus.FINISHED
