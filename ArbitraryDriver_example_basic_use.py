@@ -6,7 +6,7 @@ import traceback
 provider_to_use = Provider.GCE
 print("creating driver")
 driver = ArbitraryDriver("keys/keys.json")
-driver.load_pem_ssh_key("keys/EC2_cs520_useast1.pem")
+driver.load_pem_ssh_key("keys/static_pair.pem")
 #to_do, append .pem fikle location to the keys.json
 print("creating node")
 # When using the ArbitraryDriver, the create_node function is the only
@@ -14,15 +14,14 @@ print("creating node")
 if provider_to_use==Provider.EC2:
 	node = driver.create_node(name='test-node1', image=driver.get_image('ami-0fc20dd1da406780b', provider=Provider.EC2), size=driver.get_size('t2.micro', provider=Provider.EC2), provider=Provider.EC2)
 elif provider_to_use==Provider.GCE:
-	node = driver.create_node(name='test-node1', image=driver.get_image('debian-9-stretch-v20200309', provider=Provider.GCE), size=driver.get_size('n1-standard-1', provider=Provider.GCE), provider=Provider.GCE)
+	node = driver.create_node(name='test-node1', image=driver.get_image('debian-9-stretch-v20200420', provider=Provider.GCE), size=driver.get_size('n1-standard-1', provider=Provider.GCE), provider=Provider.GCE)
 # Using try/except/finally ensures the node is destroyed when we are done
 try:
 	print("waiting for node to be ready")
-	node = driver.wait_until_running(node)[0][0]
+	node = driver.wait_for_ssh(node)
 	print("running job to find current date")
-	current_date = driver.run_job(node, "date")
-	print("job complete:")
-	print(current_date)
+	driver.run_job(node, "date").join()
+	print("job complete")
 except Exception as e:
 	print(traceback.format_exc())
 finally:
