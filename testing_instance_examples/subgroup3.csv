@@ -1,3 +1,4 @@
+id,name,type,size,ram,cpu,disk,gpu,bandwidth,price,provider
 3008,n1-standard-8,n1,standard8,30720,8,10,0,0,0.4,GCE
 5008,n1-highmem-8,n1,highmem8,53248,8,10,0,0,0.504,GCE
 5016,n1-highmem-16,n1,highmem16,106496,16,10,0,0,1.008,GCE

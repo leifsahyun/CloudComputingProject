@@ -1,3 +1,4 @@
+id,name,type,size,ram,cpu,disk,gpu,bandwidth,price,provider
 4032,n1-highcpu-32,n1,highcpu32,29491,32,0,0,0,1.216,GCE
 5032,n1-highmem-32,n1,highmem32,212992,32,0,0,0,2.016,GCE
 23,c5d.4xlarge,c5d,4xlarge,32768,16,400,0,10,0.768,AWS
