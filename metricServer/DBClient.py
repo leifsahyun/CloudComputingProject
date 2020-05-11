@@ -85,6 +85,7 @@ class DBClient(object):
                 else:
                     print(err)
             else:
+                print("Metrics DB connection established...")
                 self.curs = dbx.cursor(buffered=True)
                 self.dict_curs = dbx.cursor(dictionary=True)
 

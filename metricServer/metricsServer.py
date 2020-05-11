@@ -8,10 +8,14 @@ import time
 
 if sys.version_info[0] < 3:
     from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+
 else:
     from http.server import BaseHTTPRequestHandler, HTTPServer
+    #dict.__contains__=dict.__contains__
 
 # import DBclient
+from DBClient import DBClient
+
 
 API_Key = "c3d4e51234sa5"  # clearly not implemented yet
 
@@ -26,10 +30,21 @@ dummy_metrics = {"provider": "AWS",
             "something": 75}
 
 
-class MetricsServer(BaseHTTPRequestHandler):
+class MetricsServer(HTTPServer):
+    def __init__(self, dbClient, *args, **kwargs):
+         # Because HTTPServer is an old-style class, super() can't be used.
+         HTTPServer.__init__(self, *args, **kwargs)
+         print("Attached DB client")
+         self.dbc = dbClient
+
+class MetricsServerHandler(BaseHTTPRequestHandler):
 
     def __init__(self, request, client_address, server):
+        #print('Handling Request')
+        # http://donghao.org/2015/06/18/override-the-__init__-of-basehttprequesthandler-in-python/?replytocom=151#respond
+        #BaseHTTPRequestHandler.__init__(…) does NOT exit until a first request has been handled
         BaseHTTPRequestHandler.__init__(self,  request, client_address, server)
+        
         if sys.version_info[0] < 3:
             self.headers.get = self.headers.getheader
 
@@ -75,22 +90,22 @@ class MetricsServer(BaseHTTPRequestHandler):
 
             metricdata={} #class object?
             # FUTURE: prevent race condition for DB access
-            if post_data.has_key("request"):
+            if post_data.__contains__("request"):
                 if  post_data.get('request') == 'metrics':
                     for instkey in post_data["instances"]: 
                         #metricdata[instkey]=dummy_metrics  # 
-                        metricdata[instkey] = self.dbc.pull_last(instkey)
+                        metricdata[instkey] =  self.server.dbc.pull_last(instkey)
                     
                    
                 elif  post_data.get('request') == 'alternatives':
-                    metricdata['instance_names'] = self.dbc.get_alternatives(post_data.get('instance'))
+                    metricdata['instance_names'] = self.server.dbc.get_alternatives(post_data.get('instance'))
 
                 elif  post_data.get('request') == 'candidates':
-                    metricdata['instance_names'] = self.dbc.get_candidates(post_data.get('params'))
+                    metricdata['instance_names'] = self.server.dbc.get_candidates(post_data.get('params'))
 
-                self.wfile.write(json.dumps(metricdata)) 
+                self.wfile.write(json.dumps(metricdata).encode()) 
             # TODO: request might be for updating the instance list database
-            # elif has_key(something else) 
+            # elif __contains__(something else) 
 
             # couldn't find the key we are looking for
             else:
@@ -115,11 +130,10 @@ def main():
     # TODO: parameterize
     HOST_NAME = DEF_HOST_NAME
     PORT_NUMBER = DEF_PORT_NUMBER
-    server_class = HTTPServer #nice touch they did in the examples
-
-    metricd = server_class((HOST_NAME, PORT_NUMBER), MetricsServer)
+    server_class = MetricsServer #nice touch they did in the examples
+    dbc=DBClient()
+    metricd = server_class(dbc,(HOST_NAME, PORT_NUMBER), MetricsServerHandler)
     print(time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER))
-
     try:
         # MAIN LOOP will make it a step
         metricd.serve_forever()
