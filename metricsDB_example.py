@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+
+
 from metricServer.DBClient import DBClient
 from run_perfkit_and_parse_output import run_benchmarks
 
@@ -17,15 +19,19 @@ cli.show_instances()
 
 print("")
 print("Test get id from tag:")
-print(cli.get_inst_id("awss1micr"))
+print(cli.get_inst_id("AWSc48xlge"))
 
 print("Test select last:")
-print(cli.pull_last("awst1micr"))
+print(cli.pull_last("AWSc48xlge"))
 print(cli.pull_last(1))
+
+print(cli.get_alternatives('c4.8xlarge'))
+
+print(cli.get_candidates({'ram':16000,'cpu':8}))
 
 print("Connection established")
 
-
+exit()
 tests = [("GCP", "f1-micro"), ("AWS", "t2.micro")]
 
 i = 6  # will use for ids

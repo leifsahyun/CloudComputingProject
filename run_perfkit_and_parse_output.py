@@ -12,7 +12,7 @@ def run_benchmarks(provider, benchmarks, machine_type):
 
     print("Running benchmarks: {}  on provider: {}  with machine type {}...".format(", ".join(benchmarks), provider,
                                                                                     machine_type))
-    process = subprocess.Popen(perfkit_command.split(sep=" "),
+    process = subprocess.Popen(perfkit_command.split(" "),
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
 

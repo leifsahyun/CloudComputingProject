@@ -24,6 +24,9 @@ from recommendAgent.metrics import Metric
 
 API_Key = "c3d4e51234sa5"
 
+CHANGE_COST = 0 
+CEIL_SCORE = 1000000
+
 DEF_HOST_NAME = "localhost"
 DEF_PORT_NUMBER = 8080
 
@@ -44,7 +47,7 @@ units={}
 # A user usually has multiple Jobs; a Job has a Client (or User) and a Metrics
 
 #class Recommender(MetricsClient): #MetricsClient takes over HTTP attributes
-class Recommender(object):
+class Recommender(Timeloop):
 
     # the Recommender has 2 timers one for the regular metrics data update
     # the second, optional one is to check if the current instance is able to satisfy requirements 
@@ -63,19 +66,19 @@ class Recommender(object):
         #self.jobs has a current instance, candidates, metrics and a clientowner
         self.candidates=[]
         self.metrics={} #have avarning for empty metrics
-        self.current=init_val
         self.instance_data={} #overall collection of instances
 
 
         if isinstance(init_val, str):
-            self.request_alternatives(init_val)
+            self.set_current(init_val)
+            #self.request_alternatives(init_val)
         elif isinstance(init_val, dict):
             self.request_candidates(init_val)
 
 
     ### HTTP Client ###
     def init_metrics_client(self):
-        self.url=DEF_HOST_NAME + ":" + DEF_PORT_NUMBER
+        self.url='http://' + DEF_HOST_NAME + ":" + str(DEF_PORT_NUMBER)
         self.headers={"Accept": "application/json",
                 "Content-Type": "application/json"}
 
@@ -87,7 +90,8 @@ class Recommender(object):
         data_dict['request']=op
         r = requests.post(url = self.url,
             headers=self.headers, data = json.dumps(data_dict)) 
-        return r.headers, json.loads(r.content)
+        data=(json.loads(r.content) if r.content else {})
+        return r.headers, data
 
     # POST Request that contains the list of wanted instance types.
     # returns a list of dictionaries in the same order with {} for N/A ones.
@@ -96,27 +100,32 @@ class Recommender(object):
     def request_metrics(self):
         
         #TODO: filter already-up-to-date instances
-        resp_hdr,resp_data=self.request("metrics",{"intances":self.candidates})
+        resp_hdr,resp_data=self.request("metrics",{"instances":self.candidates})
 
         # case insensitivity for header keys is needed
         if resp_hdr["Content-Type"] == "application/json":
-            if self.candidates == resp_data.keys() :
-               self.instance_data.update.get('instances')
-               
-    def request_alternatives(self, inst_size):   
-        resp_hdr,resp_data=self.request("alternatives",{"intances":self.candidates})
+            if self.candidates == resp_data.keys():
+               [self.instance_data.update(resp_data or {})]
+
+    def request_alternatives(self, inst_size):  
+        resp_hdr,resp_data=self.request("alternatives",{"instance":inst_size})
         if resp_hdr["Content-Type"] == "application/json":
             self.set_candidates(resp_data.get('instance_names'))
 
     #find matching instances from specs
     def request_candidates(self,dict_params):    
-        resp_hdr,resp_data=self.request("candidates",{"intances":self.candidates})
+        resp_hdr,resp_data=self.request("candidates",{"params":dict_params})
         if resp_hdr["Content-Type"] == "application/json":
             self.set_candidates(resp_data.get('instance_names'))
 
+      
+    @staticmethod
+    def __sec2int(sec):
+        return timedelta(seconds=sec)
+
 
     ### Threading ###
-     def start(self,sel=0):
+    def start(self,sel=0):
         if not sel==2: self.jobs[0].start()
         if not sel==1: self.jobs[1].start()
 
@@ -139,7 +148,8 @@ class Recommender(object):
 
     # make sure teh candidates iterable has unqiue values and incldues the curretn instance
     def set_candidates(self,ls):
-        self.candidates=list(set(ls+[self.current]))
+        
+        self.candidates=list(set((ls if ls else [])+[self.current]))
 
     # need to reformat this: DONE, test
     #  instance[param] is an int/float, and self.metric is a dict of metrics
@@ -149,13 +159,13 @@ class Recommender(object):
         # for name, metric in self.metrics:
         #    sum+=metric.eval(instance[name])
         #IF list:
-        return sum(map(lambda m:m.eval(vars(instance)[m.name]),self.metrics))
+        return sum(map(lambda m: (m.eval(instance.get(m.name)) if instance else CEIL_SCORE),self.metrics))
         #func is a reduce(lambda x,y: ..., list)
         # OR func(list)
 
     # Evaluate if given
     def eval_bool(self,instance):
-        return all(map(lambda m:m.eval_bool(vars(instance)[m.name]),self.metrics))
+        return all(map(lambda m:(m.eval_bool(instance.get(m.name)) if instance else False),self.metrics))
 
 
     def set_reward_func(self,fun):
@@ -166,9 +176,9 @@ class Recommender(object):
     #   return self.recommend_from(self.instance_data)
 
     #def recommend_from(self,instances):
-        
+        #print(self.instance_data)
         #dict of instances(dict)
-        scores = {key:self.eval(self.instance_data[key]) for key  in self.candidates}
+        scores = {key:self.eval(self.instance_data.get(key)) for key  in self.candidates}
         #list of instances(dict)
         #scores = {instance['name']:self.eval(instance) for instance  in instances}
 
@@ -182,14 +192,18 @@ class Recommender(object):
         #optional: save scores, store best in self.recommendation
 
         #make this more analytic, with non-certain scores and close alternatives
+    
+    def set_current(self,inst):
+        self.current=inst
+        self.request_alternatives(self.current)
 
     def self_check(self):
-        self.need_eval=eval_bool(current)
+        self.need_eval=self.eval_bool(self.current)
         return self.need_eval
 
-    def __del__(self): 
+    def close(self): 
         print("Terminating Recommender...")
-        if self.stop()
+        self.stop()
 
     
 
