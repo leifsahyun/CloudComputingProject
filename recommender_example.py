@@ -2,7 +2,7 @@
 
 from recommendAgent.recommender import Recommender
 from recommendAgent.metrics import Metric
-
+import time
 
 inst_a1={
     'name':'a1.large',
@@ -61,7 +61,17 @@ print("Initial candidates:",rec.candidates)
 rec.request_alternatives(rec.current)
 print("Inst data:" ,rec.instance_data)
 rec.request_metrics()
+print("Inst data:" ,rec.instance_data)
 print(rec.recommend())
 
 
-#cand
+rec.start()
+print(rec.recommend())
+
+
+while True:
+  try:
+    time.sleep(1)
+  except KeyboardInterrupt:
+    rec.stop()
+    break

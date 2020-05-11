@@ -105,7 +105,7 @@ class Recommender(Timeloop):
         # case insensitivity for header keys is needed
         if resp_hdr["Content-Type"] == "application/json":
             if self.candidates == resp_data.keys():
-               self.instance_data.update(resp_data.get('instances') or {})
+               [self.instance_data.update(resp_data or {})]
 
     def request_alternatives(self, inst_size):  
         resp_hdr,resp_data=self.request("alternatives",{"instance":inst_size})

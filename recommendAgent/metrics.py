@@ -112,9 +112,9 @@ class Metric(object):
             pass #-1
 
     def eval(self, val):
-        return self.error(val)*self.alpha
+        return (self.error(val)*self.alpha if val else 100000)
 
     #just a wrapper to have constant access to op
     #TODO: hide op and error from the user
     def eval_bool(self, val):
-        return self.op(val)
+        return (self.op(val) if val else False)

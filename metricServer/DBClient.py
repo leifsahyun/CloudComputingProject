@@ -153,8 +153,8 @@ class DBClient(object):
         identifier=self.__identifier(identifier)
         sel_cmd = ("SELECT * FROM " + BENCH_TABLE + " WHERE t_entry=(SELECT MAX(t_entry) FROM "+ BENCH_TABLE + ") AND inst_id=%s;"  )
         price_cmd = ("SELECT `price` FROM " + INST_TABLE + "  WHERE id=%s;"  )
-        print(sel_cmd)
-        print(price_cmd)
+        #print(sel_cmd)
+        #print(price_cmd)
         #dict_curs
         self.dict_curs.execute(sel_cmd,(identifier,))
         res=self.dict_curs.fetchall()
@@ -168,11 +168,14 @@ class DBClient(object):
 
         self.dict_curs.execute(price_cmd,(identifier,))
         prices=self.dict_curs.fetchall()
- 
-        full_res=list(map(lambda dict_tup: dict_tup[0].update(dict_tup[1]) ,zip(res,prices)))
+        #print(res)
+        #full_res=list(map(lambda dict_tup: dict_tup[0].update(dict_tup[1]) ,zip(res,prices)))
         # or result = {x['id']:x for x in lst1 + lst2}.values()
 
-        return full_res[:n] #n is a place holder for now and must be kept as 1. fetchall returns a list of dict entries, enabling us to collect data for running awg
+        for num in range(len(res)):
+            res[num].update(prices[num])
+        #print(res)
+        return res[0] #n is a place holder for now and must be kept as 1. fetchall returns a list of dict entries, enabling us to collect data for running awg
 
     def get_alternatives(self,instance,stats=['cpu','ram']): #stats option provides the "get instances withx,y matching 'instance'" ability
         return self.get_candidates(self.get_inst_stats(self.__identifier(instance),stats))

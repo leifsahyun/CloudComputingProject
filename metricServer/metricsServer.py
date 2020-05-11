@@ -44,7 +44,7 @@ class MetricsServerHandler(BaseHTTPRequestHandler):
         # http://donghao.org/2015/06/18/override-the-__init__-of-basehttprequesthandler-in-python/?replytocom=151#respond
         #BaseHTTPRequestHandler.__init__(…) does NOT exit until a first request has been handled
         BaseHTTPRequestHandler.__init__(self,  request, client_address, server)
-        
+
         if sys.version_info[0] < 3:
             self.headers.get = self.headers.getheader
 
@@ -52,7 +52,7 @@ class MetricsServerHandler(BaseHTTPRequestHandler):
         self.send_response(100)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
-    
+
     def do_GET(self):
         """Respond to a GET request."""
         self.send_response(200)
@@ -61,19 +61,19 @@ class MetricsServerHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
    # Parse the form data posted
-     
+
         hdr=self.headers
-        
+
         # Begin the response
         # this is where we use get_latest
         clength = int(hdr.get('content-length'))
         print(clength)
         ctype, pdict = cgi.parse_header(hdr.get("content-type"))
-        
+
         if ctype == "application/json" and clength:
 
             post_data = json.loads(self.rfile.read(clength)) # <--- Gets the data itself
-            
+
 
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -82,30 +82,33 @@ class MetricsServerHandler(BaseHTTPRequestHandler):
 
             # Note: writing the json dump each iteration might be more efficient, but looks less clean
             # so that's  something to consider later
-            # like  
+            # like
             #  for instkey ... :
             #   self.wfile.write("\'{")
-            #   self.wfile.write("\"" +instkey + '\":' + json.dumps(dummy_metrics)) 
+            #   self.wfile.write("\"" +instkey + '\":' + json.dumps(dummy_metrics))
             #   ...
 
             metricdata={} #class object?
             # FUTURE: prevent race condition for DB access
             if post_data.__contains__("request"):
+                print(post_data.get('request'))
                 if  post_data.get('request') == 'metrics':
-                    for instkey in post_data["instances"]: 
-                        #metricdata[instkey]=dummy_metrics  # 
+                    for instkey in post_data["instances"]:
+                        #metricdata[instkey]=dummy_metrics  #
                         metricdata[instkey] =  self.server.dbc.pull_last(instkey)
-                    
-                   
+
+
                 elif  post_data.get('request') == 'alternatives':
                     metricdata['instance_names'] = self.server.dbc.get_alternatives(post_data.get('instance'))
 
                 elif  post_data.get('request') == 'candidates':
                     metricdata['instance_names'] = self.server.dbc.get_candidates(post_data.get('params'))
 
-                self.wfile.write(json.dumps(metricdata).encode()) 
+                print('POST:',metricdata)
+                
+                self.wfile.write(json.dumps(metricdata, default=str).encode())
             # TODO: request might be for updating the instance list database
-            # elif __contains__(something else) 
+            # elif __contains__(something else)
 
             # couldn't find the key we are looking for
             else:
@@ -117,7 +120,7 @@ class MetricsServerHandler(BaseHTTPRequestHandler):
 
 
         return
-    
+
     def err_resp(self, msg, code=400):
         self.send_response(code)
         self.send_header("Error", msg)
@@ -150,7 +153,7 @@ def main():
     # client = DBClient(args[1:])
     # TODO: if len(argv)==1 read server.cfg, if 2 with cfg use specified file,  file or revert then def
 
-    # For now, backup and wipe database in Bash 
+    # For now, backup and wipe database in Bash
     # Perfkit calls add_entry
     # DBClient
     # TODO a http-server
